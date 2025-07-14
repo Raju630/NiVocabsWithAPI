@@ -535,7 +535,7 @@ async function showExampleSentences(banglaWord) {
 
     try {
         // Call the new sentences API
-        const response = await fetch(`/api/sentences?term=${encodeURIComponent(japaneseSearchTerm)}`);
+        const response = await fetch(`/.netlify/functions/api/sentences?term=${encodeURIComponent(japaneseSearchTerm)}`);
         if (!response.ok) throw new Error("Failed to fetch sentences.");
         
         const relevantSentences = await response.json();
