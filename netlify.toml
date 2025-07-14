@@ -25,3 +25,11 @@
   from = "/study"
   to = "/study.html"
   status = 200
+
+[dev]
+  # Command to run for local development (not needed for static sites)
+  # framework = "#static" 
+  # Port for the local server
+  port = 8888
+  # The directory to publish (same as above)
+  publish = "."
