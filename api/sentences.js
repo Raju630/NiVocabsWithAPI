@@ -26,53 +26,51 @@ export default async function handler(request) {
     const db = await connectToDatabase();
     const collection = db.collection("sentences");
 
-    // --- FIX: Get query params from the request URL ---
+    // --- UPDATED: Get specific jp_term and en_term parameters ---
     const url = new URL(request.url);
-    const term = url.searchParams.get('term');
-    const lang = url.searchParams.get('lang');
-    // --- END FIX ---
+    const jp_term = url.searchParams.get('jp_term');
+    const en_term = url.searchParams.get('en_term');
+    // --- END UPDATE ---
 
-    // Validate 'term' for emptiness after trimming.
-    const trimmedTerm = term ? term.trim() : '';
+    // Validate that both terms are provided and not empty after trimming.
+    const trimmedJpTerm = jp_term ? jp_term.trim() : '';
+    const trimmedEnTerm = en_term ? en_term.trim() : '';
 
-    if (!trimmedTerm) { // This check was correctly firing before, causing the 400 error
-      console.error("Sentences API: Missing or empty 'term' parameter.");
-      return new Response(JSON.stringify({ error: "A search term is required and cannot be empty." }), {
+    if (!trimmedJpTerm || !trimmedEnTerm) {
+      console.error("Sentences API: Missing 'jp_term' or 'en_term' parameter.");
+      return new Response(JSON.stringify({ error: "Both a Japanese and English search term are required." }), {
         status: 400,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       });
     }
 
-    let searchField;
-    let mongoQuery = {};
+    // --- NEW: Build the combined query using $and ---
+    
+    // Condition A: The Japanese term must be in the 'jp' field.
+    const jpRegex = new RegExp(escapeRegExp(trimmedJpTerm), 'i');
+    const jpCondition = { jp: { $regex: jpRegex } };
 
-    if (lang === 'en') {
-      searchField = 'en';
-      // For English, split the term into individual words and search for ANY of them.
-      const searchTerms = trimmedTerm.split(/\s+|[~()]|\s*,\s*/).filter(Boolean);
-      
-      if (searchTerms.length === 0) {
-           console.error("Sentences API: English term resulted in no valid search words.");
-           return new Response(JSON.stringify({ error: "Invalid English search term." }), {
-                status: 400,
-                headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-            });
-      }
-
-      // Create an $or query for each word
-      const orConditions = searchTerms.map(word => {
-          const regex = new RegExp(escapeRegExp(word), 'i');
-          const condition = {};
-          condition[searchField] = { $regex: regex };
-          return condition;
-      });
-      mongoQuery = { $or: orConditions };
-
-    } else { // Default to Japanese searchField
-      searchField = 'jp';
-      const searchRegex = new RegExp(escapeRegExp(trimmedTerm), 'i');
-      mongoQuery[searchField] = { $regex: searchRegex };
+    // Condition B: At least one of the English keywords must be in the 'en' field.
+    const englishKeywords = trimmedEnTerm.split(/\s+|[~()]|\s*,\s*/).filter(Boolean);
+    
+    if (englishKeywords.length === 0) {
+       console.error("Sentences API: English term resulted in no valid search words.");
+       return new Response(JSON.stringify({ error: "Invalid English search term provided." }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
     }
+
+    // Create an $or query for each English keyword
+    const enOrConditions = englishKeywords.map(word => {
+        const regex = new RegExp(escapeRegExp(word), 'i');
+        return { en: { $regex: regex } };
+    });
+    const enCondition = { $or: enOrConditions };
+
+    // Combine both conditions with a top-level $and
+    const mongoQuery = { $and: [jpCondition, enCondition] };
+    // --- END NEW QUERY ---
 
     const results = await collection.find(mongoQuery).limit(50).toArray();
 

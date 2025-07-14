@@ -465,26 +465,35 @@ function createWordCard(word) {
     return card;
 }
 
-// === NEW, SIMPLIFIED showExampleSentences FUNCTION ===
+// === UPDATED showExampleSentences FUNCTION ===
 async function showExampleSentences(banglaWord) {
     const wordData = App.data.dictionary[banglaWord];
     if (!wordData) return;
 
-    // Only use the Japanese term for searching
+    // --- NEW: Get both Japanese and English terms for the refined search ---
     const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
+    const englishSearchTerm = wordData.en || '';
 
     const modal = App.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
     const bodyEl = modal.querySelector('#sentence-modal-body');
 
-    // Update modal header to only show the Japanese term
     wordEl.textContent = japaneseSearchTerm;
-    bodyEl.innerHTML = '<p>Loading sentences...</p>';
     modal.style.display = 'flex';
 
+    // --- NEW: Validate that both terms exist before making an API call ---
+    if (!japaneseSearchTerm || !englishSearchTerm) {
+        bodyEl.innerHTML = `<p style="color: #ffcdd2;">Cannot search for sentences. This word is missing a required Japanese or English translation.</p>`;
+        return;
+    }
+    
+    bodyEl.innerHTML = '<p>Loading sentences...</p>';
+
     try {
-        // API call is now only for Japanese
-        const response = await fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`);
+        // --- NEW: API call now sends both jp_term and en_term for the combined search ---
+        const apiUrl = `/.netlify/functions/sentences?jp_term=${encodeURIComponent(japaneseSearchTerm)}&en_term=${encodeURIComponent(englishSearchTerm)}`;
+        const response = await fetch(apiUrl);
+        // --- END NEW ---
 
         if (!response.ok) {
             const errorData = await response.json();
@@ -494,7 +503,7 @@ async function showExampleSentences(banglaWord) {
         const relevantSentences = await response.json();
 
         if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No matching example sentences found for "${japaneseSearchTerm}".</p>`;
         } else {
             const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
             let html = '';
@@ -503,10 +512,10 @@ async function showExampleSentences(banglaWord) {
                 const jpText = s.jp || '';
                 const bnText = s.bn || '';
 
-                // Always highlight the Japanese text
+                // Highlight the Japanese text
                 const jpDisplay = jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`);
 
-                // Render only Japanese and Bangla sentences
+                // Render Japanese and Bangla sentences
                 html += `
                     <div class="sentence-entry">
                         <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
