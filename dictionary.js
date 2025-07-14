@@ -246,10 +246,7 @@ function addWord() {
 
 // MODIFIED to add to deletedWords list
 function deleteWord(word) {
-    if (!confirm(`Are you sure you want to delete the word "${word}"?`)) {
-        return;
-    }
-
+    
     // 1. Update data models
     if (!App.data.deletedWords.includes(word)) {
         App.data.deletedWords.push(word);
