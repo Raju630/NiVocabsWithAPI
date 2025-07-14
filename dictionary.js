@@ -538,7 +538,7 @@ async function showExampleSentences(banglaWord) {
     try {
         // --- ADD THESE LOGS ---
         console.log("Frontend: Searching JP term:", japaneseSearchTerm);
-        const jpPromise = fetch(`/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`)
+        const jpPromise = fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`)
             .then(res => res.ok ? res.json() : Promise.resolve([]))
             .catch(() => []);
 
