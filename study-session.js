@@ -20,17 +20,18 @@ async function showExampleSentences(banglaWord) {
     const wordData = StudyApp.data.dictionary[banglaWord];
     if (!wordData) return;
     
+    // FIX 1: Declare these variables BEFORE the try-catch block
     const japaneseSearchTerm = wordData.meaning.replace(/\[.*?\]|～|、/g, '').trim();
     const modal = StudyApp.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
-    const bodyEl = modal.querySelector('#sentence-modal-body');
+    const bodyEl = modal.querySelector('#sentence-modal-body'); // FIX 2: bodyEl is now always defined
 
     wordEl.textContent = japaneseSearchTerm;
     bodyEl.innerHTML = '<p>Loading sentences...</p>';
     modal.style.display = 'flex';
 
     try {
-        const response = await fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}`); // PREPEND /.netlify/functions/
+        const response = await fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}`);
         if (!response.ok) throw new Error("Failed to fetch sentences from the API.");
         
         const relevantSentences = await response.json();
@@ -39,7 +40,7 @@ async function showExampleSentences(banglaWord) {
             bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
         } else {
             const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'g');
-            let html = `<h2>Examples for "${japaneseSearchTerm}"</h2>`;
+            let html = `<h2>Examples for "${japaneseSearchTerm}"</h2>`; // Consider removing this h2 to match dictionary.js
             relevantSentences.forEach((s, index) => {
                 const highlightedSentence = s.jp.replace(highlightRegex, `<strong>${japaneseSearchTerm}</strong>`);
                 html += `<div class="sentence-entry"><p class="sentence-japanese">${index + 1}. ${highlightedSentence} <span class="speak-icon" onclick="speakJapanese('${s.jp.replace(/'/g, "\\'")}')">🔊</span></p><p class="sentence-bangla">(${s.bn})</p></div>`;
@@ -47,8 +48,11 @@ async function showExampleSentences(banglaWord) {
             bodyEl.innerHTML = html;
         }
     } catch (error) {
+        // Now japaneseSearchTerm and bodyEl are in scope here
         console.error("Error fetching sentences:", error);
-        bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences from the server.</p>`;
+        if (bodyEl) {
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences from the server: ${error.message}</p>`;
+        }
     }
 }
 

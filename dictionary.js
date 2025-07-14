@@ -521,25 +521,94 @@ function createWordCard(word) {
 // In dictionary.js, REPLACE the old showExampleSentences function with this one.
 
 async function showExampleSentences(banglaWord) {
-    // ... (existing code) ...
+    const wordData = App.data.dictionary[banglaWord];
+    if (!wordData) return;
+
+    // FIX 1: Declare these variables BEFORE the try-catch block
+    let japaneseSearchTerm = wordData.meaning.replace(/\[.*?\]|～|、/g, '').trim();
+    let englishTranslations = wordData.en ? wordData.en.split(',').map(term => term.trim()) : [];
+
+    const modal = App.elements.sentenceModal;
+    const wordEl = modal.querySelector('#sentence-modal-word');
+    const bodyEl = modal.querySelector('#sentence-modal-body'); // FIX 2: bodyEl is now always defined
+
+    // Display both potential search terms in the modal header
+    wordEl.textContent = `${japaneseSearchTerm} / ${englishTranslations.join(', ')}`;
+    bodyEl.innerHTML = '<p>Loading sentences...</p>';
+    modal.style.display = 'flex';
 
     try {
-        // CHANGE THIS LINE:
-        const jpPromise = fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`) // PREPEND /.netlify/functions/
+        const jpPromise = fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`)
             .then(res => res.ok ? res.json() : Promise.resolve([]))
             .catch(() => []);
 
         const enPromise = englishTranslations.length > 0
-            // CHANGE THIS LINE:
-            ? fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(englishTranslations[0])}&lang=en`) // PREPEND /.netlify/functions/
+            ? fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(englishTranslations[0])}&lang=en`)
                 .then(res => res.ok ? res.json() : Promise.resolve([]))
                 .catch(() => [])
             : Promise.resolve([]);
 
-        // ... (rest of the function) ...
+        const [japaneseSentences, englishSentences] = await Promise.all([jpPromise, enPromise]);
+
+        let relevantSentences = [];
+        let finalSearchTerm = japaneseSearchTerm;
+        let termLanguage = 'jp';
+
+        if (japaneseSentences.length > 0) {
+            relevantSentences = japaneseSentences;
+        } else if (englishSentences.length > 0) {
+            for (const phrase of englishTranslations) {
+                const wordsInPhrase = phrase.split(/\s+/);
+                for (const word of wordsInPhrase) {
+                    const foundSentence = englishSentences.find(s => 
+                        s.en && new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(s.en)
+                    );
+                    if (foundSentence) {
+                        relevantSentences = englishSentences;
+                        finalSearchTerm = word;
+                        termLanguage = 'en';
+                        break;
+                    }
+                }
+                if (relevantSentences.length > 0) break;
+            }
+        }
+        
+        if (relevantSentences.length === 0) {
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}" or "${englishTranslations.join(', ')}".</p>`;
+        } else {
+            const highlightRegex = new RegExp(escapeRegExp(finalSearchTerm), 'gi');
+            let html = `<h2>Examples for "${finalSearchTerm}"</h2>`;
+
+            relevantSentences.forEach((s, index) => {
+                const jpText = s.jp || '';
+                const enText = s.en || '';
+                const bnText = s.bn || '';
+
+                const jpDisplay = termLanguage === 'jp' 
+                    ? jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
+                    : jpText;
+                const enDisplay = termLanguage === 'en' 
+                    ? enText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
+                    : enText;
+
+                html += `
+                    <div class="sentence-entry">
+                        <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
+                        <p class="sentence-english">(${enDisplay})</p>
+                        <p class="sentence-bangla">(${bnText})</p>
+                    </div>
+                `;
+            });
+            bodyEl.innerHTML = html;
+        }
     } catch (error) {
+        // Now japaneseSearchTerm and bodyEl are in scope here
         console.error("Error fetching sentences:", error);
-        bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences.</p>`;
+        // You can use bodyEl safely here to update the modal with an error message
+        if (bodyEl) { // Check just in case, though it should be defined now
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences: ${error.message}</p>`;
+        }
     }
 }
 
