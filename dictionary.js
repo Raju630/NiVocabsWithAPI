@@ -60,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAndRenderWords();
 });
 
-// FINAL, CORRECTED fetchAndRenderWords function
 async function fetchAndRenderWords(searchTerm = '') {
     const container = document.getElementById('word-list-container');
     if (!container) return;
@@ -68,7 +67,9 @@ async function fetchAndRenderWords(searchTerm = '') {
     // Show a loading indicator immediately
     container.innerHTML = '<p style="text-align:center; color:#aaa;">Loading...</p>';
     
-    let apiUrl = '/api/words';
+    // CHANGE THIS LINE:
+    let apiUrl = '/.netlify/functions/words'; // PREPEND /.netlify/functions/
+
     const isSearching = searchTerm.length > 0;
 
     if (isSearching) {
@@ -79,40 +80,7 @@ async function fetchAndRenderWords(searchTerm = '') {
 
     try {
         const response = await fetch(apiUrl);
-        if (!response.ok) throw new Error(`API request failed`);
-        
-        const data = await response.json();
-        const wordKeys = Object.keys(data).sort();
-        
-        // Always merge the fetched data into the main dictionary
-        Object.assign(App.data.dictionary, data);
-
-        container.innerHTML = ''; // Clear "Loading..." message
-
-        if (wordKeys.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#888;">No words found.</p>';
-            return;
-        }
-
-        if (isSearching) {
-            // --- SEARCH LOGIC ---
-            // If we are searching, bypass virtualization and render all results at once.
-            console.log(`Search returned ${wordKeys.length} results. Rendering all.`);
-            wordKeys.forEach(word => container.appendChild(createWordCard(word)));
-            // Disable infinite scroll during search
-            window.removeEventListener('scroll', handleInfiniteScroll);
-
-        } else {
-            // --- BATCH LOADING LOGIC ---
-            // If not searching, set up the state for virtualized rendering.
-            console.log(`Loaded ${wordKeys.length} words for view. Setting up batch rendering.`);
-            App.config.allWordsForView = wordKeys;
-            App.config.currentPage = 0;
-            renderNextBatch(); // Render the first batch
-            // Re-enable infinite scroll for browsing
-            window.addEventListener('scroll', handleInfiniteScroll);
-        }
-
+        // ... (rest of the function) ...
     } catch (error) {
         console.error("Failed to fetch words:", error);
         container.innerHTML = '<p style="text-align:center; color:#ff8a80;">Error: Could not load dictionary data.</p>';
@@ -518,104 +486,29 @@ function createWordCard(word) {
 // In dictionary.js, REPLACE the old showExampleSentences function with this one.
 
 async function showExampleSentences(banglaWord) {
-    const wordData = App.data.dictionary[banglaWord];
-    if (!wordData) return;
-
-    // 1. GET BOTH JAPANESE AND ENGLISH TERMS FROM YOUR DATA STRUCTURE
-    const japaneseSearchTerm = wordData.meaning.replace(/\[.*?\]|～|、/g, '').trim();
-    // Get English terms, handling cases where 'en' might not exist
-    const englishTranslations = wordData.en ? wordData.en.split(',').map(term => term.trim()) : [];
-
-    const modal = App.elements.sentenceModal;
-    const wordEl = modal.querySelector('#sentence-modal-word');
-    const bodyEl = modal.querySelector('#sentence-modal-body');
-
-    // Display both potential search terms in the modal header
-    wordEl.textContent = `${japaneseSearchTerm} / ${englishTranslations.join(', ')}`;
-    bodyEl.innerHTML = '<p>Loading sentences...</p>';
-    modal.style.display = 'flex';
+    // ... (existing code) ...
 
     try {
-        // 2. FETCH SENTENCES FOR BOTH LANGUAGES CONCURRENTLY
-        // Note: This assumes your API can accept a 'lang' parameter (e.g., /api/sentences?term=...&lang=jp)
-        const jpPromise = fetch(`/api/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`)
-            .then(res => res.ok ? res.json() : Promise.resolve([])) // Resolve to empty array on error
-            .catch(() => []); // Also catch network errors
+        // CHANGE THIS LINE:
+        const jpPromise = fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`) // PREPEND /.netlify/functions/
+            .then(res => res.ok ? res.json() : Promise.resolve([]))
+            .catch(() => []);
 
         const enPromise = englishTranslations.length > 0
-            ? fetch(`/api/sentences?term=${encodeURIComponent(englishTranslations[0])}&lang=en`)
+            // CHANGE THIS LINE:
+            ? fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(englishTranslations[0])}&lang=en`) // PREPEND /.netlify/functions/
                 .then(res => res.ok ? res.json() : Promise.resolve([]))
                 .catch(() => [])
-            : Promise.resolve([]); // If no English term, resolve with an empty array immediately
+            : Promise.resolve([]);
 
-        // Wait for both API calls to complete
-        const [japaneseSentences, englishSentences] = await Promise.all([jpPromise, enPromise]);
-
-        let relevantSentences = [];
-        let finalSearchTerm = japaneseSearchTerm;
-        let termLanguage = 'jp'; // 'jp' or 'en'
-
-        // 3. APPLY THE MATCHING LOGIC (JP FIRST, THEN EN)
-        if (japaneseSentences.length > 0) {
-            relevantSentences = japaneseSentences;
-        } else if (englishSentences.length > 0) {
-            // Loop through each English translation (e.g., "post office", "mail")
-            for (const phrase of englishTranslations) {
-                const wordsInPhrase = phrase.split(/\s+/); // Split into individual words
-                for (const word of wordsInPhrase) {
-                    // Check if this individual 'word' exists in any of the returned English sentences
-                    const foundSentence = englishSentences.find(s => 
-                        s.en && new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(s.en)
-                    );
-
-                    if (foundSentence) {
-                        relevantSentences = englishSentences;
-                        finalSearchTerm = word; // This is the specific word that matched
-                        termLanguage = 'en';
-                        break; // Found a match, exit inner loop
-                    }
-                }
-                if (relevantSentences.length > 0) break; // Found a match, exit outer loop
-            }
-        }
-        
-        // 4. RENDER THE RESULTS
-        if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}" or "${englishTranslations.join(', ')}".</p>`;
-        } else {
-            // Create a case-insensitive regex to highlight the matched term
-            const highlightRegex = new RegExp(escapeRegExp(finalSearchTerm), 'gi');
-            let html = `<h2>Examples for "${finalSearchTerm}"</h2>`;
-
-            relevantSentences.forEach((s, index) => {
-                // Ensure s.jp, s.en, and s.bn exist to prevent errors
-                const jpText = s.jp || '';
-                const enText = s.en || '';
-                const bnText = s.bn || '';
-
-                // Highlight the correct sentence (Japanese or English)
-                const jpDisplay = termLanguage === 'jp' 
-                    ? jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
-                    : jpText;
-                const enDisplay = termLanguage === 'en' 
-                    ? enText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
-                    : enText;
-
-                html += `
-                    <div class="sentence-entry">
-                        <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
-                        <p class="sentence-english">(${enDisplay})</p> <!-- ADDED ENGLISH LINE -->
-                        <p class="sentence-bangla">(${bnText})</p>
-                    </div>
-                `;
-            });
-            bodyEl.innerHTML = html;
-        }
+        // ... (rest of the function) ...
     } catch (error) {
         console.error("Error fetching sentences:", error);
         bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences.</p>`;
     }
 }
+
+
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

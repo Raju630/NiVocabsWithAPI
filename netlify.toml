@@ -1,0 +1,34 @@
+# netlify.toml
+
+[build]
+  # The command to run to build your frontend and prepare functions
+  # This will install dependencies for your serverless functions
+  command = "npm install"
+  
+  # The directory where your static files (HTML, CSS, JS, images) are located
+  # In your case, they are directly in the root.
+  publish = "." 
+  
+  # The directory where your Netlify Functions are located
+  functions = "api" 
+
+[[redirects]]
+  # This is a common redirect for single-page applications (SPAs)
+  # It ensures that all routes (except Netlify functions and files) fallback to index.html
+  # This project is multi-page, so this isn't strictly necessary, but good practice
+  # for client-side routing like /lesson?id=1 to load lesson.html correctly without 404s
+  from = "/lesson"
+  to = "/lesson.html"
+  status = 200
+
+[[redirects]]
+  from = "/developer"
+  to = "/developer.html"
+  status = 200
+
+[[redirects]]
+  from = "/study"
+  to = "/study.html"
+  status = 200
+
+# You don't need to specify environment variables here, they are set in the Netlify UI.

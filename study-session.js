@@ -30,7 +30,7 @@ async function showExampleSentences(banglaWord) {
     modal.style.display = 'flex';
 
     try {
-        const response = await fetch(`/api/sentences?term=${encodeURIComponent(japaneseSearchTerm)}`);
+        const response = await fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}`); // PREPEND /.netlify/functions/
         if (!response.ok) throw new Error("Failed to fetch sentences from the API.");
         
         const relevantSentences = await response.json();
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- THE CRITICAL CHANGE IS HERE ---
         // We now use a specific 'list' parameter instead of the generic 'search' parameter.
         const wordsForApi = encodeURIComponent(studyWordsList.join(','));
-        const response = await fetch(`/api/words?list=${wordsForApi}`);
+        const response = await fetch(`/.netlify/functions/words?list=${wordsForApi}`);
         // --- END OF CHANGE ---
 
         if (!response.ok) throw new Error('Failed to fetch dictionary data from the server.');
