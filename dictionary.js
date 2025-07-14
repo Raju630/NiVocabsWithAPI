@@ -457,16 +457,16 @@ function renderDictionaryTab() {
             <h3>Add New Word</h3>
             <div class="add-word-form">
                 <div class="input-group">
-                    <label for="word-input">Bangla Word</label>
-                    <input type="text" id="word-input" placeholder="e.g., আমি">
+                    
+                    <input type="text" id="word-input" placeholder="Bangla Word">
                 </div>
                 <div class="input-group">
-                    <label for="meaning-input">Japanese Meaning</label>
-                    <input type="text" id="meaning-input" placeholder="e.g., わたし">
+                
+                    <input type="text" id="meaning-input" placeholder="Japanese Meaning">
                 </div>
                 <div class="input-group">
-                    <label for="en-input">English Meaning</label>
-                    <input type="text" id="en-input" placeholder="e.g., I, me">
+                    
+                    <input type="text" id="en-input" placeholder="English Meaning">
                 </div>
                 <div class="input-group">
                     <label for="category-select">Category</label>
