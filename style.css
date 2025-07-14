@@ -158,7 +158,7 @@ input::placeholder { color: #aaa; }
 .input-group { margin-bottom: 15px; }
 .input-group label { display: block; margin-bottom: 5px; font-weight: 700; color: white; }
 
-/* --- NEW: Add Word Form Layout --- */
+/* --- Add Word Form Layout --- */
 .add-word-form {
     display: grid;
     /* Create a responsive grid that wraps columns */
@@ -167,12 +167,15 @@ input::placeholder { color: #aaa; }
     align-items: end; /* Aligns items to the bottom of their cell */
 }
 
-.add-word-action {
-    /* On larger screens, this might span multiple columns if you want */
-}
-
 .add-word-action .add-button {
     width: 100%; /* Make button fill its grid cell */
+}
+
+/* --- IMPLEMENTED: On larger screens, make the button's container span the full width --- */
+@media (min-width: 992px) {
+    .add-word-action {
+        grid-column: 1 / -1; /* Span from the first grid line to the last */
+    }
 }
 
 
