@@ -524,15 +524,13 @@ async function showExampleSentences(banglaWord) {
     const wordData = App.data.dictionary[banglaWord];
     if (!wordData) return;
 
-    // FIX 1: Declare these variables BEFORE the try-catch block
     let japaneseSearchTerm = wordData.meaning.replace(/\[.*?\]|～|、/g, '').trim();
     let englishTranslations = wordData.en ? wordData.en.split(',').map(term => term.trim()) : [];
 
     const modal = App.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
-    const bodyEl = modal.querySelector('#sentence-modal-body'); // FIX 2: bodyEl is now always defined
+    const bodyEl = modal.querySelector('#sentence-modal-body');
 
-    // Display both potential search terms in the modal header
     wordEl.textContent = `${japaneseSearchTerm} / ${englishTranslations.join(', ')}`;
     bodyEl.innerHTML = '<p>Loading sentences...</p>';
     modal.style.display = 'flex';
@@ -542,13 +540,27 @@ async function showExampleSentences(banglaWord) {
             .then(res => res.ok ? res.json() : Promise.resolve([]))
             .catch(() => []);
 
-        const enPromise = englishTranslations.length > 0
-            ? fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(englishTranslations[0])}&lang=en`)
-                .then(res => res.ok ? res.json() : Promise.resolve([]))
-                .catch(() => [])
-            : Promise.resolve([]);
+        // --- IMPORTANT CHANGE HERE FOR ENGLISH SEARCH TERMS ---
+        let enPromises = [];
+        if (englishTranslations.length > 0) {
+            // For English, loop through each individual translation term and search for it.
+            // This is more robust than searching for the entire concatenated string.
+            for (const enTerm of englishTranslations) {
+                // Consider splitting enTerm further by spaces if individual words are needed
+                // For simplicity, we'll try each comma-separated term first.
+                enPromises.push(
+                    fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(enTerm)}&lang=en`)
+                        .then(res => res.ok ? res.json() : Promise.resolve([]))
+                        .catch(() => [])
+                );
+            }
+        }
+        const allEnglishResults = await Promise.all(enPromises);
+        let combinedEnglishSentences = allEnglishResults.flat(); // Flatten all results into one array
+        // --- END IMPORTANT CHANGE ---
 
-        const [japaneseSentences, englishSentences] = await Promise.all([jpPromise, enPromise]);
+        // const [japaneseSentences, englishSentences] = await Promise.all([jpPromise, enPromise]); // This line changes!
+        const japaneseSentences = await jpPromise; // Get Japanese sentences first
 
         let relevantSentences = [];
         let finalSearchTerm = japaneseSearchTerm;
@@ -556,29 +568,34 @@ async function showExampleSentences(banglaWord) {
 
         if (japaneseSentences.length > 0) {
             relevantSentences = japaneseSentences;
-        } else if (englishSentences.length > 0) {
-            for (const phrase of englishTranslations) {
-                const wordsInPhrase = phrase.split(/\s+/);
-                for (const word of wordsInPhrase) {
-                    const foundSentence = englishSentences.find(s => 
-                        s.en && new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(s.en)
-                    );
-                    if (foundSentence) {
-                        relevantSentences = englishSentences;
-                        finalSearchTerm = word;
-                        termLanguage = 'en';
+        } else if (combinedEnglishSentences.length > 0) { // Now use combinedEnglishSentences
+            // Apply the matching logic again, but now on the combined results
+            // This loop ensures we find the *specific* English term that matched if multiple were searched
+            let matchedEnTerm = null;
+            for (const phrase of englishTranslations) { // Loop through original English terms
+                const wordsInPhrase = phrase.split(/\s+/); 
+                for (const word of wordsInPhrase) { // Try individual words within a phrase
+                    if (combinedEnglishSentences.some(s => s.en && new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(s.en))) {
+                        matchedEnTerm = word;
                         break;
                     }
                 }
-                if (relevantSentences.length > 0) break;
+                if (matchedEnTerm) break;
+            }
+
+            if (matchedEnTerm) {
+                relevantSentences = combinedEnglishSentences;
+                finalSearchTerm = matchedEnTerm;
+                termLanguage = 'en';
             }
         }
         
+        // ... (rest of the rendering logic remains similar) ...
         if (relevantSentences.length === 0) {
             bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}" or "${englishTranslations.join(', ')}".</p>`;
         } else {
             const highlightRegex = new RegExp(escapeRegExp(finalSearchTerm), 'gi');
-            let html = `<h2>Examples for "${finalSearchTerm}"</h2>`;
+            let html = `<h2>Examples for "${finalSearchTerm}"</h2>`; // Keep this h2 for consistency with previous output
 
             relevantSentences.forEach((s, index) => {
                 const jpText = s.jp || '';
@@ -602,16 +619,14 @@ async function showExampleSentences(banglaWord) {
             });
             bodyEl.innerHTML = html;
         }
+
     } catch (error) {
-        // Now japaneseSearchTerm and bodyEl are in scope here
         console.error("Error fetching sentences:", error);
-        // You can use bodyEl safely here to update the modal with an error message
-        if (bodyEl) { // Check just in case, though it should be defined now
+        if (bodyEl) {
             bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences: ${error.message}</p>`;
         }
     }
 }
-
 
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

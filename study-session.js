@@ -16,46 +16,114 @@ const StudyApp = {
     }
 };
 
+// study-session.js (Refinement for showExampleSentences)
+
+// ... (previous code) ...
+
 async function showExampleSentences(banglaWord) {
     const wordData = StudyApp.data.dictionary[banglaWord];
     if (!wordData) return;
     
-    // FIX 1: Declare these variables BEFORE the try-catch block
     const japaneseSearchTerm = wordData.meaning.replace(/\[.*?\]|～|、/g, '').trim();
+    // Also extract English terms for study-session for consistency if you want English examples there too
+    const englishTranslations = wordData.en ? wordData.en.split(',').map(term => term.trim()) : []; 
+
     const modal = StudyApp.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
-    const bodyEl = modal.querySelector('#sentence-modal-body'); // FIX 2: bodyEl is now always defined
+    const bodyEl = modal.querySelector('#sentence-modal-body');
 
-    wordEl.textContent = japaneseSearchTerm;
+    // Update modal header to include English if present
+    wordEl.textContent = `${japaneseSearchTerm} ${englishTranslations.length > 0 ? '/ ' + englishTranslations.join(', ') : ''}`;
     bodyEl.innerHTML = '<p>Loading sentences...</p>';
     modal.style.display = 'flex';
 
     try {
-        const response = await fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}`);
-        if (!response.ok) throw new Error("Failed to fetch sentences from the API.");
+        const jpPromise = fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`);
         
-        const relevantSentences = await response.json();
+        let enPromises = [];
+        if (englishTranslations.length > 0) {
+            for (const enTerm of englishTranslations) {
+                enPromises.push(
+                    fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(enTerm)}&lang=en`)
+                );
+            }
+        }
 
+        // Wait for all promises (JP and all EN)
+        const [jpResponse, ...enResponses] = await Promise.all([jpPromise, ...enPromises]);
+        
+        const japaneseSentences = jpResponse.ok ? await jpResponse.json() : [];
+        let combinedEnglishSentences = [];
+        for (const res of enResponses) {
+            if (res.ok) {
+                const data = await res.json();
+                combinedEnglishSentences.push(...data);
+            }
+        }
+
+        let relevantSentences = [];
+        let finalSearchTerm = japaneseSearchTerm;
+        let termLanguage = 'jp';
+
+        if (japaneseSentences.length > 0) {
+            relevantSentences = japaneseSentences;
+        } else if (combinedEnglishSentences.length > 0) {
+            let matchedEnTerm = null;
+            for (const phrase of englishTranslations) {
+                const wordsInPhrase = phrase.split(/\s+/); 
+                for (const word of wordsInPhrase) {
+                    if (combinedEnglishSentences.some(s => s.en && new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(s.en))) {
+                        matchedEnTerm = word;
+                        break;
+                    }
+                }
+                if (matchedEnTerm) break;
+            }
+
+            if (matchedEnTerm) {
+                relevantSentences = combinedEnglishSentences;
+                finalSearchTerm = matchedEnTerm;
+                termLanguage = 'en';
+            }
+        }
+
+        // ... (rest of the rendering logic remains similar) ...
         if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}" or "${englishTranslations.join(', ')}".</p>`;
         } else {
-            const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'g');
-            let html = `<h2>Examples for "${japaneseSearchTerm}"</h2>`; // Consider removing this h2 to match dictionary.js
+            const highlightRegex = new RegExp(escapeRegExp(finalSearchTerm), 'gi');
+            let html = `<h2>Examples for "${finalSearchTerm}"</h2>`; // Keep this h2 for consistency with previous output
+
             relevantSentences.forEach((s, index) => {
-                const highlightedSentence = s.jp.replace(highlightRegex, `<strong>${japaneseSearchTerm}</strong>`);
-                html += `<div class="sentence-entry"><p class="sentence-japanese">${index + 1}. ${highlightedSentence} <span class="speak-icon" onclick="speakJapanese('${s.jp.replace(/'/g, "\\'")}')">🔊</span></p><p class="sentence-bangla">(${s.bn})</p></div>`;
+                const jpText = s.jp || '';
+                const enText = s.en || '';
+                const bnText = s.bn || '';
+
+                const jpDisplay = termLanguage === 'jp' 
+                    ? jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
+                    : jpText;
+                const enDisplay = termLanguage === 'en' 
+                    ? enText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
+                    : enText;
+
+                html += `
+                    <div class="sentence-entry">
+                        <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
+                        <p class="sentence-english">(${enDisplay})</p>
+                        <p class="sentence-bangla">(${bnText})</p>
+                    </div>
+                `;
             });
             bodyEl.innerHTML = html;
         }
+
     } catch (error) {
-        // Now japaneseSearchTerm and bodyEl are in scope here
         console.error("Error fetching sentences:", error);
         if (bodyEl) {
             bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences from the server: ${error.message}</p>`;
         }
     }
 }
-
 // --- All other helper functions (speakJapanese, closeModals, etc.) remain the same ---
 function speakJapanese(text) {
     if ('speechSynthesis' in window) {
