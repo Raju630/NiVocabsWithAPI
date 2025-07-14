@@ -1,4 +1,4 @@
-// study-session.js (FINAL - CORRECTED API REQUEST LOGIC)
+// study-session.js (FINAL - SIMPLIFIED SENTENCES)
 
 const StudyApp = {
     data: {
@@ -16,100 +16,51 @@ const StudyApp = {
     }
 };
 
-// study-session.js (Refinement for showExampleSentences)
-
-// ... (previous code) ...
-
+// === NEW, SIMPLIFIED showExampleSentences FUNCTION ===
 async function showExampleSentences(banglaWord) {
     const wordData = StudyApp.data.dictionary[banglaWord];
     if (!wordData) return;
-    
-    const japaneseSearchTerm = wordData.meaning.replace(/\[.*?\]|～|、/g, '').trim();
-    // Also extract English terms for study-session for consistency if you want English examples there too
-    const englishTranslations = wordData.en ? wordData.en.split(',').map(term => term.trim()) : []; 
+
+    // Only use the Japanese term for searching
+    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
 
     const modal = StudyApp.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
     const bodyEl = modal.querySelector('#sentence-modal-body');
 
-    // Update modal header to include English if present
-    wordEl.textContent = `${japaneseSearchTerm} ${englishTranslations.length > 0 ? '/ ' + englishTranslations.join(', ') : ''}`;
+    // Update modal header to only show the Japanese term
+    wordEl.textContent = japaneseSearchTerm;
     bodyEl.innerHTML = '<p>Loading sentences...</p>';
     modal.style.display = 'flex';
 
     try {
-        const jpPromise = fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`);
+        // API call is now only for Japanese
+        const response = await fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Server responded with status ${response.status}`);
+        }
         
-        let enPromises = [];
-        if (englishTranslations.length > 0) {
-            for (const enTerm of englishTranslations) {
-                enPromises.push(
-                    fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(enTerm)}&lang=en`)
-                );
-            }
-        }
+        const relevantSentences = await response.json();
 
-        // Wait for all promises (JP and all EN)
-        const [jpResponse, ...enResponses] = await Promise.all([jpPromise, ...enPromises]);
-        
-        const japaneseSentences = jpResponse.ok ? await jpResponse.json() : [];
-        let combinedEnglishSentences = [];
-        for (const res of enResponses) {
-            if (res.ok) {
-                const data = await res.json();
-                combinedEnglishSentences.push(...data);
-            }
-        }
-
-        let relevantSentences = [];
-        let finalSearchTerm = japaneseSearchTerm;
-        let termLanguage = 'jp';
-
-        if (japaneseSentences.length > 0) {
-            relevantSentences = japaneseSentences;
-        } else if (combinedEnglishSentences.length > 0) {
-            let matchedEnTerm = null;
-            for (const phrase of englishTranslations) {
-                const wordsInPhrase = phrase.split(/\s+/); 
-                for (const word of wordsInPhrase) {
-                    if (combinedEnglishSentences.some(s => s.en && new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(s.en))) {
-                        matchedEnTerm = word;
-                        break;
-                    }
-                }
-                if (matchedEnTerm) break;
-            }
-
-            if (matchedEnTerm) {
-                relevantSentences = combinedEnglishSentences;
-                finalSearchTerm = matchedEnTerm;
-                termLanguage = 'en';
-            }
-        }
-
-        // ... (rest of the rendering logic remains similar) ...
         if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}" or "${englishTranslations.join(', ')}".</p>`;
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
         } else {
-            const highlightRegex = new RegExp(escapeRegExp(finalSearchTerm), 'gi');
-            let html = `<h2>Examples for "${finalSearchTerm}"</h2>`; // Keep this h2 for consistency with previous output
+            const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
+            let html = '';
 
             relevantSentences.forEach((s, index) => {
                 const jpText = s.jp || '';
-                const enText = s.en || '';
                 const bnText = s.bn || '';
 
-                const jpDisplay = termLanguage === 'jp' 
-                    ? jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
-                    : jpText;
-                const enDisplay = termLanguage === 'en' 
-                    ? enText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
-                    : enText;
+                // Always highlight the Japanese text
+                const jpDisplay = jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`);
 
+                // Render only Japanese and Bangla sentences
                 html += `
                     <div class="sentence-entry">
                         <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
-                        <p class="sentence-english">(${enDisplay})</p>
                         <p class="sentence-bangla">(${bnText})</p>
                     </div>
                 `;
@@ -124,6 +75,7 @@ async function showExampleSentences(banglaWord) {
         }
     }
 }
+
 // --- All other helper functions (speakJapanese, closeModals, etc.) remain the same ---
 function speakJapanese(text) {
     if ('speechSynthesis' in window) {
@@ -181,11 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const studyWordsList = decodeURIComponent(wordsParam).split(',');
         StudyApp.data.studyWords = studyWordsList;
 
-        // --- THE CRITICAL CHANGE IS HERE ---
-        // We now use a specific 'list' parameter instead of the generic 'search' parameter.
         const wordsForApi = encodeURIComponent(studyWordsList.join(','));
         const response = await fetch(`/.netlify/functions/words?list=${wordsForApi}`);
-        // --- END OF CHANGE ---
 
         if (!response.ok) throw new Error('Failed to fetch dictionary data from the server.');
 
@@ -198,7 +147,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // --- The rest of the file (render logic, etc.) remains the same ---
     let currentStudyWord = null;
     function renderStudyPage() {
         const validStudyWords = StudyApp.data.studyWords.filter(word => StudyApp.data.dictionary[word]);
