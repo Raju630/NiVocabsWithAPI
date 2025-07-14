@@ -1,43 +1,36 @@
-// api/sentences.js (FINAL & CORRECTED for Response API)
+// api/words.js (FINAL - CORRECTLY SEPARATES LOGIC FOR LIST VS. SEARCH)
 
 import { MongoClient } from 'mongodb';
-
-let cachedDb = null;
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
-
-async function connectToDatabase() {
-  if (cachedDb) {
-    return cachedDb;
-  }
-  const connection = await client.connect();
-  cachedDb = connection.db("n5_dictionary_db");
-  return cachedDb;
-}
 
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export default async function handler(event) {
+const uri = process.env.MONGODB_URI;
+const client = new MongoClient(uri);
+
+export default async function handler(request, response) {
   try {
-    const db = await connectToDatabase();
+    await client.connect();
+    const db = client.db("n5_dictionary_db");
     const collection = db.collection("words");
 
-    // Ensure event.queryStringParameters is an object, even if empty
-    const queryParams = event.queryStringParameters || {};
-    const { lesson, search, list } = queryParams; // Destructure from the (potentially empty) object
+    // Get all potential parameters
+    const { lesson, search, list } = request.query;
     
     let query = {};
     let results = [];
 
+    // --- THE CRITICAL LOGIC SEPARATION ---
     if (list) {
+      // 1. Handle requests for a specific list of words (from Study Session)
       const decodedList = decodeURIComponent(list);
       const wordList = decodedList.split(',').map(word => word.trim());
       query = { bangla: { $in: wordList } };
       results = await collection.find(query).toArray();
 
     } else if (search) {
+      // 2. Handle general search requests (from search bar)
       const decodedSearch = decodeURIComponent(search);
       const searchRegex = new RegExp(escapeRegExp(decodedSearch), 'i'); 
       query = { 
@@ -49,14 +42,17 @@ export default async function handler(event) {
       };
       results = await collection.find(query).sort({ bangla: 1 }).toArray();
     
-    } else if (lesson !== undefined && lesson !== null) { // This condition is good for lesson
+    } else if (lesson) {
+      // 3. Handle requests for a specific lesson
       query = { lesson: parseInt(lesson, 10) };
       results = await collection.find(query).sort({ bangla: 1 }).toArray();
     
-    } else { // This is the default branch for no parameters
+    } else {
+      // 4. Default: Get all words (for homepage)
       results = await collection.find({}).sort({ bangla: 1 }).toArray();
     }
     
+    // Convert the results array into the required dictionary object format
     const dictionaryObject = results.reduce((obj, item) => {
         obj[item.bangla] = {
             meaning: item.japanese || '',
@@ -67,23 +63,10 @@ export default async function handler(event) {
         return obj;
     }, {});
 
-    return new Response(JSON.stringify(dictionaryObject), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-    });
+    response.status(200).json(dictionaryObject);
 
   } catch (error) {
     console.error("API Error:", error);
-    // You should still check Netlify logs for the specific error here
-    return new Response(JSON.stringify({ error: "API Error: " + error.message }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-    });
-  }
+    response.status(500).json({ error: "API Error: " + error.message });
+  } 
 }

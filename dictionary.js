@@ -524,106 +524,41 @@ async function showExampleSentences(banglaWord) {
     const wordData = App.data.dictionary[banglaWord];
     if (!wordData) return;
 
-    let japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
-    let englishTranslations = (wordData.en || '').split(',').map(term => term.trim()).filter(term => term.length > 0);
-
+    const japaneseSearchTerm = wordData.meaning.replace(/\[.*?\]|～|、/g, '').trim();
     const modal = App.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
     const bodyEl = modal.querySelector('#sentence-modal-body');
 
-    wordEl.textContent = `${japaneseSearchTerm} / ${englishTranslations.join(', ')}`;
+    wordEl.textContent = japaneseSearchTerm;
     bodyEl.innerHTML = '<p>Loading sentences...</p>';
     modal.style.display = 'flex';
 
     try {
-        // --- ADD THESE LOGS ---
-        console.log("Frontend: Searching JP term:", japaneseSearchTerm);
-        const jpPromise = fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`)
-            .then(res => res.ok ? res.json() : Promise.resolve([]))
-            .catch(() => []);
-
-        let enPromises = [];
-        if (englishTranslations.length > 0) {
-            for (const enTerm of englishTranslations) {
-                // --- ADD THIS LOG ---
-                console.log("Frontend: Searching EN term:", enTerm);
-                enPromises.push(
-                    fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(enTerm)}&lang=en`)
-                        .then(res => res.ok ? res.json() : Promise.resolve([]))
-                        .catch(() => [])
-                );
-            }
-        }
-        const allEnglishResults = await Promise.all(enPromises);
-        let combinedEnglishSentences = allEnglishResults.flat(); // Flatten all results into one array
-        // --- END IMPORTANT CHANGE ---
-
-        // const [japaneseSentences, englishSentences] = await Promise.all([jpPromise, enPromise]); // This line changes!
-        const japaneseSentences = await jpPromise; // Get Japanese sentences first
-
-        let relevantSentences = [];
-        let finalSearchTerm = japaneseSearchTerm;
-        let termLanguage = 'jp';
-
-        if (japaneseSentences.length > 0) {
-            relevantSentences = japaneseSentences;
-        } else if (combinedEnglishSentences.length > 0) { // Now use combinedEnglishSentences
-            // Apply the matching logic again, but now on the combined results
-            // This loop ensures we find the *specific* English term that matched if multiple were searched
-            let matchedEnTerm = null;
-            for (const phrase of englishTranslations) { // Loop through original English terms
-                const wordsInPhrase = phrase.split(/\s+/); 
-                for (const word of wordsInPhrase) { // Try individual words within a phrase
-                    if (combinedEnglishSentences.some(s => s.en && new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(s.en))) {
-                        matchedEnTerm = word;
-                        break;
-                    }
-                }
-                if (matchedEnTerm) break;
-            }
-
-            if (matchedEnTerm) {
-                relevantSentences = combinedEnglishSentences;
-                finalSearchTerm = matchedEnTerm;
-                termLanguage = 'en';
-            }
-        }
+        // Call the new sentences API
+        const response = await fetch(`/api/sentences?term=${encodeURIComponent(japaneseSearchTerm)}`);
+        if (!response.ok) throw new Error("Failed to fetch sentences.");
         
-        // ... (rest of the rendering logic remains similar) ...
+        const relevantSentences = await response.json();
+
         if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}" or "${englishTranslations.join(', ')}".</p>`;
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
         } else {
-            const highlightRegex = new RegExp(escapeRegExp(finalSearchTerm), 'gi');
-            let html = `<h2>Examples for "${finalSearchTerm}"</h2>`; // Keep this h2 for consistency with previous output
-
+            const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'g');
+            let html = `<h2>Examples for "${japaneseSearchTerm}"</h2>`;
             relevantSentences.forEach((s, index) => {
-                const jpText = s.jp || '';
-                const enText = s.en || '';
-                const bnText = s.bn || '';
-
-                const jpDisplay = termLanguage === 'jp' 
-                    ? jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
-                    : jpText;
-                const enDisplay = termLanguage === 'en' 
-                    ? enText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
-                    : enText;
-
+                const highlightedSentence = s.jp.replace(highlightRegex, `<strong>${japaneseSearchTerm}</strong>`);
                 html += `
                     <div class="sentence-entry">
-                        <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
-                        <p class="sentence-english">(${enDisplay})</p>
-                        <p class="sentence-bangla">(${bnText})</p>
+                        <p class="sentence-japanese">${index + 1}. ${highlightedSentence} <span class="speak-icon" onclick="speakJapanese('${s.jp.replace(/'/g, "\\'")}')">🔊</span></p>
+                        <p class="sentence-bangla">(${s.bn})</p>
                     </div>
                 `;
             });
             bodyEl.innerHTML = html;
         }
-
-     } catch (error) {
+    } catch (error) {
         console.error("Error fetching sentences:", error);
-        if (bodyEl) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences: ${error.message}</p>`;
-        }
+        bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences.</p>`;
     }
 }
 
