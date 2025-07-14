@@ -1152,13 +1152,3 @@ footer {
     transform: translateY(100px);
 }
 }
-
-/* In style.css, add this rule or modify the existing one */
-
-.sentence-english strong {
-    color: var(--secondary-color);
-    font-weight: 700;
-    background-color: rgba(251, 215, 192, 0.15);
-    padding: 0 4px;
-    border-radius: 4px;
-}

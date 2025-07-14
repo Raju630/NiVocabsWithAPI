@@ -1,4 +1,4 @@
-// dictionary.js (VERSION 12 - SIMPLIFIED SENTENCES)
+// dictionary.js (VERSION 11 - MNEMONIC FEATURE RESTORED)
 
 // --- 1. GLOBAL STATE & UNIFIED DATA MODEL ---
 const App = {
@@ -14,7 +14,7 @@ const App = {
         currentRandomWord: null,
         mainPracticeList: [], // For the main dictionary tab
         weakPracticeList: [], // For the weak words tab
-        pexelsApiKey: '0YZ1YqOAGmfXwoIBl7elGumGGMYqwrOJgwqyqstQuMEGtyPJjiFFNr3K',
+        pexelsApiKey: '0YZ1YqOAGmfXwoIBl7elGumGGMYqwrOJgwqyqstQuMEGtyPJjiFFNr3K', // RESTORED
          currentQuiz: {
             type: null,
             questions: [], 
@@ -25,16 +25,16 @@ const App = {
         quizScore: 0,
         studyList: [],
         isSelectionMode: false,
-        renderedWords: [],
-        allWordsForView: [],
-        renderBatchSize: 30,
+        renderedWords: [], // <-- ADD THIS: To hold the words currently displayed
+        allWordsForView: [], // <-- ADD THIS: To hold all words for the current lesson/search
+        renderBatchSize: 30, // <-- ADD THIS: How many words to render at a time
         currentPage: 0 
     },
     elements: {
         appContainer: document.getElementById('dictionary-app-container'),
         modal: document.getElementById('edit-modal'),
         sentenceModal: document.getElementById('sentence-modal'),
-        mnemonicModal: document.getElementById('mnemonic-modal')
+        mnemonicModal: document.getElementById('mnemonic-modal') // RESTORED
     },
 };
 
@@ -78,9 +78,17 @@ async function fetchAndRenderWords(searchTerm = '') {
 
     try {
         const response = await fetch(apiUrl);
+        // Add a log here to see what the response status is
+        console.log('Response status for words API:', response.status); 
+
         if (!response.ok) {
-            const errorBody = await response.json();
-            throw new Error(`API request failed: ${errorBody.error || response.statusText}`);
+            // Check if it's a 400 and log the response body for more info
+            if (response.status === 400) {
+                const errorBody = await response.json();
+                console.error("400 Bad Request for words API:", errorBody);
+                throw new Error(`API request failed with status 400: ${errorBody.error}`);
+            }
+            throw new Error(`API request failed with status ${response.status}`);
         }
         
         const data = await response.json();
@@ -124,6 +132,7 @@ function renderNextBatch() {
     const startIndex = currentPage * renderBatchSize;
     const endIndex = startIndex + renderBatchSize;
 
+    // Get the next slice of words to render
     const batchToRender = allWordsForView.slice(startIndex, endIndex);
 
     if (batchToRender.length === 0 && currentPage === 0) {
@@ -131,19 +140,25 @@ function renderNextBatch() {
         return;
     }
 
+    // Append the new cards to the container
     batchToRender.forEach(word => {
         if (App.data.dictionary[word]) {
             container.appendChild(createWordCard(word));
         }
     });
 
+    // Increment the page for the next batch
     App.config.currentPage++;
 }
 
 // NEW function to handle infinite scroll
 function handleInfiniteScroll() {
+    // window.scrollY: how far we've scrolled from the top
+    // window.innerHeight: the height of the visible viewport
+    // document.documentElement.scrollHeight: the total height of the entire page
     if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 200) {
-        const { allWordsForView } = App.config;
+        // We are within 200px of the bottom of the page, load more.
+        const { renderedWords, allWordsForView } = App.config;
         if (allWordsForView.length > document.querySelectorAll('.word-card').length) {
              renderNextBatch();
         }
@@ -249,7 +264,7 @@ function handleWordCardClick(e) {
     if (actionButton) {
         e.stopPropagation();
         if (actionButton.classList.contains('examples')) showExampleSentences(word);
-        else if (actionButton.classList.contains('mnemonic')) showMnemonic(word);
+        else if (actionButton.classList.contains('mnemonic')) showMnemonic(word); // RESTORED
         else if (actionButton.classList.contains('edit')) openEditModal(word);
         else if (actionButton.classList.contains('delete')) deleteWord(word);
     } else if (speakIcon) {
@@ -299,27 +314,55 @@ function clearSelection() {
     document.getElementById('selected-count').textContent = 0;
 }
 
+// In dictionary.js -- FINAL, SIMPLE, AND CORRECT
+
 function startStudySession() {
     if (App.config.studyList.length === 0) {
         alert("Please select at least one word to start a practice session.");
         return;
     }
+
+    // 1. Join the words into a single comma-separated string & encode for the URL.
     const encodedWords = encodeURIComponent(App.config.studyList.join(','));
+    
+    // 2. Create the final URL. We use the direct file path to be safe.
     const studyUrl = `study.html?words=${encodedWords}`;
+
+    // 3. Navigate.
     if (window.matchMedia('(display-mode: standalone)').matches) {
+        // For installed PWAs
         window.location.href = studyUrl;
     } else {
+        // For regular browser tabs
         window.open(studyUrl, '_blank');
     }
+    
+    // 4. Reset the selection mode on the current page.
     toggleSelectionMode(); 
 }
 
+// ALSO, add this small piece of code inside the main DOMContentLoaded listener
+// in dictionary.js. This will clear the selection when the user returns to this page.
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && App.config.isSelectionMode) {
         toggleSelectionMode();
     }
 });
 
+// Add this to your main DOMContentLoaded listener in dictionary.js to handle clearing the selection
+// when the user returns to the tab.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && App.config.isSelectionMode) {
+        toggleSelectionMode();
+    }
+});
+
+// In dictionary.js, inside the DOMContentLoaded listener
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && App.config.isSelectionMode) {
+        toggleSelectionMode();
+    }
+});
 function toggleWeakWordMeaning() {
     const word = App.config.currentRandomWord;
     if (!word) return;
@@ -411,6 +454,7 @@ function attachAppEventListeners() {
     if (App.elements.sentenceModal) {
         App.elements.sentenceModal.querySelector('.modal-close').addEventListener('click', closeSentenceModal);
     }
+    // RESTORED: Add listener for the mnemonic modal
     App.elements.mnemonicModal = document.getElementById('mnemonic-modal');
     if (App.elements.mnemonicModal) {
         App.elements.mnemonicModal.querySelector('.modal-close').addEventListener('click', closeMnemonicModal);
@@ -426,10 +470,19 @@ function getWordPool() {
         : allWords;
 }
 
+// UPDATED renderWordList function
+// FINAL, SIMPLIFIED renderWordList
 function renderWordList() {
+    // This function is now just a "controller" that sets things up.
+    // The actual rendering is done by renderNextBatch.
+    
     const title = document.getElementById('word-list-title');
     if (!title) return;
+    
     title.textContent = App.config.lessonId ? `Words for Lesson ${App.config.lessonId}` : "All Words";
+    
+    // The initial call to render the first batch is now handled by fetchAndRenderWords.
+    // This function can be kept for potential future use or further simplified.
 }
 
 function createWordCard(word) {
@@ -437,7 +490,7 @@ function createWordCard(word) {
     card.className = 'word-card';
     card.dataset.word = word;
     const { meaning, category, lesson, en } = App.data.dictionary[word];
-    const hasEnglishTerm = !!en;
+    const hasEnglishTerm = !!en; // RESTORED: Check for English term
 
     if (App.config.isSelectionMode && App.config.studyList.includes(word)) {
         card.classList.add('selected');
@@ -465,51 +518,100 @@ function createWordCard(word) {
     return card;
 }
 
-// === NEW, SIMPLIFIED showExampleSentences FUNCTION ===
+// In dictionary.js, REPLACE the old showExampleSentences function with this one.
+
 async function showExampleSentences(banglaWord) {
     const wordData = App.data.dictionary[banglaWord];
     if (!wordData) return;
 
-    // Only use the Japanese term for searching
-    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
+    let japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
+    let englishTranslations = (wordData.en || '').split(',').map(term => term.trim()).filter(term => term.length > 0);
 
     const modal = App.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
     const bodyEl = modal.querySelector('#sentence-modal-body');
 
-    // Update modal header to only show the Japanese term
-    wordEl.textContent = japaneseSearchTerm;
+    wordEl.textContent = `${japaneseSearchTerm} / ${englishTranslations.join(', ')}`;
     bodyEl.innerHTML = '<p>Loading sentences...</p>';
     modal.style.display = 'flex';
 
     try {
-        // API call is now only for Japanese
-        const response = await fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`);
+        // --- ADD THESE LOGS ---
+        console.log("Frontend: Searching JP term:", japaneseSearchTerm);
+        const jpPromise = fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`)
+            .then(res => res.ok ? res.json() : Promise.resolve([]))
+            .catch(() => []);
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `Server responded with status ${response.status}`);
+        let enPromises = [];
+        if (englishTranslations.length > 0) {
+            for (const enTerm of englishTranslations) {
+                // --- ADD THIS LOG ---
+                console.log("Frontend: Searching EN term:", enTerm);
+                enPromises.push(
+                    fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(enTerm)}&lang=en`)
+                        .then(res => res.ok ? res.json() : Promise.resolve([]))
+                        .catch(() => [])
+                );
+            }
+        }
+        const allEnglishResults = await Promise.all(enPromises);
+        let combinedEnglishSentences = allEnglishResults.flat(); // Flatten all results into one array
+        // --- END IMPORTANT CHANGE ---
+
+        // const [japaneseSentences, englishSentences] = await Promise.all([jpPromise, enPromise]); // This line changes!
+        const japaneseSentences = await jpPromise; // Get Japanese sentences first
+
+        let relevantSentences = [];
+        let finalSearchTerm = japaneseSearchTerm;
+        let termLanguage = 'jp';
+
+        if (japaneseSentences.length > 0) {
+            relevantSentences = japaneseSentences;
+        } else if (combinedEnglishSentences.length > 0) { // Now use combinedEnglishSentences
+            // Apply the matching logic again, but now on the combined results
+            // This loop ensures we find the *specific* English term that matched if multiple were searched
+            let matchedEnTerm = null;
+            for (const phrase of englishTranslations) { // Loop through original English terms
+                const wordsInPhrase = phrase.split(/\s+/); 
+                for (const word of wordsInPhrase) { // Try individual words within a phrase
+                    if (combinedEnglishSentences.some(s => s.en && new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(s.en))) {
+                        matchedEnTerm = word;
+                        break;
+                    }
+                }
+                if (matchedEnTerm) break;
+            }
+
+            if (matchedEnTerm) {
+                relevantSentences = combinedEnglishSentences;
+                finalSearchTerm = matchedEnTerm;
+                termLanguage = 'en';
+            }
         }
         
-        const relevantSentences = await response.json();
-
+        // ... (rest of the rendering logic remains similar) ...
         if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}" or "${englishTranslations.join(', ')}".</p>`;
         } else {
-            const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
-            let html = '';
+            const highlightRegex = new RegExp(escapeRegExp(finalSearchTerm), 'gi');
+            let html = `<h2>Examples for "${finalSearchTerm}"</h2>`; // Keep this h2 for consistency with previous output
 
             relevantSentences.forEach((s, index) => {
                 const jpText = s.jp || '';
+                const enText = s.en || '';
                 const bnText = s.bn || '';
 
-                // Always highlight the Japanese text
-                const jpDisplay = jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`);
+                const jpDisplay = termLanguage === 'jp' 
+                    ? jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
+                    : jpText;
+                const enDisplay = termLanguage === 'en' 
+                    ? enText.replace(highlightRegex, (match) => `<strong>${match}</strong>`) 
+                    : enText;
 
-                // Render only Japanese and Bangla sentences
                 html += `
                     <div class="sentence-entry">
                         <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
+                        <p class="sentence-english">(${enDisplay})</p>
                         <p class="sentence-bangla">(${bnText})</p>
                     </div>
                 `;
@@ -517,7 +619,7 @@ async function showExampleSentences(banglaWord) {
             bodyEl.innerHTML = html;
         }
 
-    } catch (error) {
+     } catch (error) {
         console.error("Error fetching sentences:", error);
         if (bodyEl) {
             bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences: ${error.message}</p>`;
@@ -570,11 +672,13 @@ function addWord() {
 }
 
 function deleteWord(word) {
-    delete App.data.dictionary[word];
-    App.data.weakWords = App.data.weakWords.filter(w => w !== word);
-    saveAppData();
-    renderWordList();
-    renderWeakWordsList();
+   
+        delete App.data.dictionary[word];
+        App.data.weakWords = App.data.weakWords.filter(w => w !== word);
+        saveAppData();
+        renderWordList();
+        renderWeakWordsList();
+    
 }
 
 function getRandomWord() {
