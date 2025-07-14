@@ -16,37 +16,26 @@ const StudyApp = {
     }
 };
 
-// study-session.js
-
-// ... (keep all other code the same) ...
-
-// === NEW, COMBINED-SEARCH showExampleSentences FUNCTION ===
+// === NEW, SIMPLIFIED showExampleSentences FUNCTION ===
 async function showExampleSentences(banglaWord) {
     const wordData = StudyApp.data.dictionary[banglaWord];
     if (!wordData) return;
 
-    // 1. Prepare search terms
+    // Only use the Japanese term for searching
     const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
-    const englishKeywords = (wordData.en || '').split(',').map(term => term.trim()).filter(Boolean);
 
     const modal = StudyApp.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
     const bodyEl = modal.querySelector('#sentence-modal-body');
 
-    // 2. Update modal header to show both terms
-    wordEl.textContent = `${japaneseSearchTerm} / ${englishKeywords.join(', ')}`;
+    // Update modal header to only show the Japanese term
+    wordEl.textContent = japaneseSearchTerm;
     bodyEl.innerHTML = '<p>Loading sentences...</p>';
     modal.style.display = 'flex';
 
     try {
-        // 3. Build the new API URL
-        let apiUrl = `/.netlify/functions/sentences?jp_term=${encodeURIComponent(japaneseSearchTerm)}`;
-        if (englishKeywords.length > 0) {
-            apiUrl += `&en_terms=${encodeURIComponent(englishKeywords.join(','))}`;
-        }
-        
-        console.log("Frontend (Study): Calling API:", apiUrl);
-        const response = await fetch(apiUrl);
+        // API call is now only for Japanese
+        const response = await fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`);
 
         if (!response.ok) {
             const errorData = await response.json();
@@ -56,29 +45,22 @@ async function showExampleSentences(banglaWord) {
         const relevantSentences = await response.json();
 
         if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No sentences found matching both "${japaneseSearchTerm}" and "${englishKeywords.join(' / ')}".</p>`;
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
         } else {
-            // 4. Prepare regex for highlighting
-            const jpHighlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
-            const enHighlightRegex = new RegExp(englishKeywords.map(escapeRegExp).join('|'), 'gi');
-
+            const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
             let html = '';
+
             relevantSentences.forEach((s, index) => {
                 const jpText = s.jp || '';
-                const enText = s.en || '';
                 const bnText = s.bn || '';
 
-                // 5. Highlight matches
-                const jpDisplay = jpText.replace(jpHighlightRegex, (match) => `<strong>${match}</strong>`);
-                const enDisplay = englishKeywords.length > 0
-                    ? enText.replace(enHighlightRegex, (match) => `<strong>${match}</strong>`)
-                    : enText;
+                // Always highlight the Japanese text
+                const jpDisplay = jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`);
 
-                // 6. Display all three sentences
+                // Render only Japanese and Bangla sentences
                 html += `
                     <div class="sentence-entry">
                         <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
-                        <p class="sentence-english">(${enDisplay})</p>
                         <p class="sentence-bangla">(${bnText})</p>
                     </div>
                 `;
@@ -93,8 +75,6 @@ async function showExampleSentences(banglaWord) {
         }
     }
 }
-
-// ... (the rest of study-session.js remains the same) ...
 
 // --- All other helper functions (speakJapanese, closeModals, etc.) remain the same ---
 function speakJapanese(text) {
