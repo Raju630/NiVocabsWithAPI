@@ -536,18 +536,17 @@ async function showExampleSentences(banglaWord) {
     modal.style.display = 'flex';
 
     try {
+        // --- ADD THESE LOGS ---
+        console.log("Frontend: Searching JP term:", japaneseSearchTerm);
         const jpPromise = fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`)
             .then(res => res.ok ? res.json() : Promise.resolve([]))
             .catch(() => []);
 
-        // --- IMPORTANT CHANGE HERE FOR ENGLISH SEARCH TERMS ---
         let enPromises = [];
         if (englishTranslations.length > 0) {
-            // For English, loop through each individual translation term and search for it.
-            // This is more robust than searching for the entire concatenated string.
             for (const enTerm of englishTranslations) {
-                // Consider splitting enTerm further by spaces if individual words are needed
-                // For simplicity, we'll try each comma-separated term first.
+                // --- ADD THIS LOG ---
+                console.log("Frontend: Searching EN term:", enTerm);
                 enPromises.push(
                     fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(enTerm)}&lang=en`)
                         .then(res => res.ok ? res.json() : Promise.resolve([]))
@@ -620,7 +619,7 @@ async function showExampleSentences(banglaWord) {
             bodyEl.innerHTML = html;
         }
 
-    } catch (error) {
+     } catch (error) {
         console.error("Error fetching sentences:", error);
         if (bodyEl) {
             bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences: ${error.message}</p>`;
