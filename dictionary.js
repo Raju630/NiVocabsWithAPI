@@ -524,8 +524,8 @@ async function showExampleSentences(banglaWord) {
     const wordData = App.data.dictionary[banglaWord];
     if (!wordData) return;
 
-    let japaneseSearchTerm = wordData.meaning.replace(/\[.*?\]|～|、/g, '').trim();
-    let englishTranslations = wordData.en ? wordData.en.split(',').map(term => term.trim()) : [];
+    let japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
+    let englishTranslations = (wordData.en || '').split(',').map(term => term.trim()).filter(term => term.length > 0);
 
     const modal = App.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
