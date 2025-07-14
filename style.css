@@ -78,7 +78,7 @@ main { padding: 20px; }
     background: var(--glass-bg);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     padding: 25px; border-radius: var(--border-radius);
-    margin-bottom: 7px; border: 1px solid var(--glass-border);
+    margin-bottom: 20px; border: 1px solid var(--glass-border);
     box-shadow: 0 4px 20px var(--glass-shadow);
 }
 
