@@ -1,4 +1,4 @@
-// api/sentences.js (FINAL & Robust for Combined JP/EN Search)
+// api/sentences.js (FINAL - With "AND" Logic for JP & EN)
 
 import { MongoClient } from 'mongodb';
 
@@ -26,45 +26,46 @@ export default async function handler(request) {
     const collection = db.collection("sentences");
 
     const url = new URL(request.url);
-    // NEW: Expecting specific parameters for combined search
     const jpTerm = url.searchParams.get('jp_term');
-    const enTerms = url.searchParams.get('en_terms');
+    const enTerms = url.searchParams.get('en_terms'); // e.g., "time,hour"
 
-    // Japanese term is always required
-    if (!jpTerm || !jpTerm.trim()) {
-      return new Response(JSON.stringify({ error: "A Japanese search term (jp_term) is required." }), {
+    const trimmedJpTerm = jpTerm ? jpTerm.trim() : '';
+
+    if (!trimmedJpTerm) {
+      console.error("Sentences API: Missing required 'jp_term' parameter.");
+      return new Response(JSON.stringify({ error: "A Japanese search term is required." }), {
         status: 400,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       });
     }
 
-    const trimmedJpTerm = jpTerm.trim();
+    let mongoQuery = {};
+
+    // Create the regex for the mandatory Japanese term
+    const jpRegex = new RegExp(escapeRegExp(trimmedJpTerm), 'i');
     
-    // --- The Core Logic Change: Build an $and query ---
-    const andConditions = [];
+    // Check if English terms were provided for the "AND" condition
+    const enTermsArray = enTerms ? enTerms.split(',').map(t => t.trim()).filter(Boolean) : [];
 
-    // Condition A: The Japanese term must be in the 'jp' field.
-    andConditions.push({ 
-      jp: { $regex: new RegExp(escapeRegExp(trimmedJpTerm), 'i') } 
-    });
-
-    // Condition B: If English terms are provided, AT LEAST ONE must be in the 'en' field.
-    if (enTerms && enTerms.trim()) {
-      const englishKeywords = enTerms.trim().split(',').filter(Boolean);
+    if (enTermsArray.length > 0) {
+      // --- NEW "AND" LOGIC ---
+      // Condition B: Match AT LEAST ONE of the English keywords
+      const orConditions = enTermsArray.map(word => ({
+        en: { $regex: new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i') } // Use word boundaries for better matching
+      }));
       
-      if (englishKeywords.length > 0) {
-        const orConditionsForEnglish = englishKeywords.map(word => ({
-          en: { $regex: new RegExp(escapeRegExp(word.trim()), 'i') }
-        }));
-        
-        // Add the $or block for English keywords to the main $and query
-        andConditions.push({ $or: orConditionsForEnglish });
-      }
+      // Combine Condition A (Japanese) and Condition B (English) with $and
+      mongoQuery = {
+        $and: [
+          { jp: { $regex: jpRegex } }, // Condition A
+          { $or: orConditions }        // Condition B
+        ]
+      };
+
+    } else {
+      // Fallback: If no English terms are provided, just search by Japanese term
+      mongoQuery = { jp: { $regex: jpRegex } };
     }
-
-    const mongoQuery = { $and: andConditions };
-
-    console.log("Executing MongoDB Query:", JSON.stringify(mongoQuery));
 
     const results = await collection.find(mongoQuery).limit(50).toArray();
 
