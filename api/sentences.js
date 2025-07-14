@@ -1,4 +1,4 @@
-// api/sentences.js (FINAL & CORRECTED for Language Handling)
+// api/sentences.js (FINAL & Robust for English Terms)
 
 import { MongoClient } from 'mongodb';
 
@@ -16,7 +16,7 @@ async function connectToDatabase() {
 }
 
 function escapeRegExp(string) {
-  // This is good for escaping special characters in a regex pattern
+  // Escapes regex special characters
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
@@ -25,56 +25,70 @@ export default async function handler(event) {
     const db = await connectToDatabase();
     const collection = db.collection("sentences");
 
-    const { term, lang } = event.queryStringParameters || {}; // Now destructure 'lang' as well
+    const { term, lang } = event.queryStringParameters || {};
 
-    if (!term) {
-      return new Response(JSON.stringify({ error: "A search term is required." }), {
+    // Validate 'term' for emptiness after trimming.
+    // If term is provided but is just whitespace, it becomes an empty string.
+    const trimmedTerm = term ? term.trim() : '';
+
+    if (!trimmedTerm) { // Now checks for null, undefined, or empty string after trim
+      console.error("Sentences API: Missing or empty 'term' parameter.");
+      return new Response(JSON.stringify({ error: "A search term is required and cannot be empty." }), {
         status: 400,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       });
     }
 
     let searchField;
-    // Determine which field to search based on the 'lang' parameter
+    let mongoQuery = {};
+
     if (lang === 'en') {
       searchField = 'en';
-    } else if (lang === 'bn') { // Assuming you might add Bangla sentences later
-      searchField = 'bn';
-    } else { // Default to Japanese if lang is not 'en', 'bn', or not provided
+      // For English, split the term into individual words and search for ANY of them.
+      // This handles "by ~ (time limit)" better by searching "by", "time", "limit".
+      const searchTerms = trimmedTerm.split(/\s+|[~()]|\s*,\s*/).filter(Boolean); // Split by space, ~, (), comma, filter out empty strings
+      
+      if (searchTerms.length === 0) { // If splitting results in no valid terms
+           console.error("Sentences API: English term resulted in no valid search words.");
+           return new Response(JSON.stringify({ error: "Invalid English search term." }), {
+                status: 400,
+                headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+            });
+      }
+
+      // Create an $or query for each word
+      const orConditions = searchTerms.map(word => {
+          const regex = new RegExp(escapeRegExp(word), 'i');
+          const condition = {};
+          condition[searchField] = { $regex: regex };
+          return condition;
+      });
+      mongoQuery = { $or: orConditions };
+
+    } else { // Default to Japanese searchField
       searchField = 'jp';
+      const searchRegex = new RegExp(escapeRegExp(trimmedTerm), 'i');
+      mongoQuery[searchField] = { $regex: searchRegex };
     }
 
-    // Adjust the search term for English words to be more flexible,
-    // as English terms in your data might be phrases.
-    // However, the database sentences might only contain individual words.
-    // For now, let's keep it simple with a direct regex on the term.
-    // If you're searching for "post office", you might search for "post" AND "office".
-    // For simplicity, let's just search the whole term passed, and rely on `RegExp`'s behavior.
-    const searchRegex = new RegExp(escapeRegExp(term), 'i');
-
-    // Build the query object dynamically
-    const mongoQuery = {};
-    mongoQuery[searchField] = { $regex: searchRegex };
-
-    const results = await collection.find(mongoQuery).limit(50).toArray(); // Use mongoQuery
+    const results = await collection.find(mongoQuery).limit(50).toArray();
 
     return new Response(JSON.stringify(results), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": "*"
       },
     });
 
   } catch (error) {
-    console.error("API Error in sentences function:", error); // Make this log more specific
-    // If a specific term (like the long English one) causes an error in RegExp or MongoDB
-    // it will be caught here. This is why we are getting a 400/500 depending on the catch block.
-    return new Response(JSON.stringify({ error: "Failed to fetch sentences. " + error.message }), {
-      status: 500, // Changed to 500 as this is a server-side error, not a bad client request.
+    console.error("API Error in sentences function:", error);
+    // Return a 500 for internal server errors
+    return new Response(JSON.stringify({ error: "Failed to fetch sentences due to server error. " + error.message }), {
+      status: 500,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": "*"
       },
     });
   }
