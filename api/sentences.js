@@ -1,38 +1,68 @@
-// api/sentences.js
+// api/sentences.js (FINAL & CORRECTED)
 
 import { MongoClient } from 'mongodb';
 
+// Add the connection pooling logic
+let cachedDb = null;
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 
-// This function escapes special regex characters
+async function connectToDatabase() {
+  if (cachedDb) {
+    return cachedDb;
+  }
+  const connection = await client.connect();
+  cachedDb = connection.db("n5_dictionary_db");
+  return cachedDb;
+}
+
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export default async function handler(request, response) {
+export default async function handler(event) { // Change 'request' to 'event'
   try {
-    await client.connect();
-    const db = client.db("n5_dictionary_db");
+    const db = await connectToDatabase();
     const collection = db.collection("sentences");
 
-    // Get the search term from the URL (?term=japanese_word)
-    const { term } = request.query;
+    // Get the search term from event.queryStringParameters
+    const { term } = event.queryStringParameters || {}; // FIX 1: Access query params correctly
 
     if (!term) {
-      return response.status(400).json({ error: "A search term is required." });
+      // FIX 2: Return the error response in the correct format
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "A search term is required." }),
+      };
     }
     
-    // Create a case-insensitive regular expression to find the term within sentences
     const searchRegex = new RegExp(escapeRegExp(term), 'i');
 
-    // Find all sentences where the 'jp' field matches the regex
-    const results = await collection.find({ jp: { $regex: searchRegex } }).limit(50).toArray(); // Limit to 50 results for performance
+    const results = await collection.find({ jp: { $regex: searchRegex } }).limit(50).toArray();
 
-    response.status(200).json(results);
+    // FIX 2: Return the success response in the correct format
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify(results),
+    };
 
   } catch (error) {
     console.error("API Error:", error);
-    response.status(500).json({ error: "Failed to connect to the database or fetch sentences." });
+    // FIX 2 (continued): Return error response in the correct format
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({ error: "Failed to connect to the database or fetch sentences." }),
+    };
+  } finally {
+    // Do NOT close the client connection here for connection pooling
   }
 }

@@ -1,4 +1,4 @@
-// api/words.js (FINAL - CORRECTLY SEPARATES LOGIC FOR LIST VS. SEARCH)
+// api/words.js (FINAL & CORRECTED)
 
 import { MongoClient } from 'mongodb';
 
@@ -9,28 +9,41 @@ function escapeRegExp(string) {
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 
-export default async function handler(request, response) {
+// Declare client and db outside the handler for connection pooling
+let cachedDb = null;
+
+async function connectToDatabase() {
+  if (cachedDb) {
+    return cachedDb;
+  }
+  const connection = await client.connect();
+  cachedDb = connection.db("n5_dictionary_db");
+  return cachedDb;
+}
+
+export default async function handler(event) { // Change 'request' to 'event' for clarity
+  // Netlify Functions (Lambda) pass event and context, not request/response
+  // The query parameters are in event.queryStringParameters
+  // The HTTP method is in event.httpMethod
+
   try {
-    await client.connect();
-    const db = client.db("n5_dictionary_db");
+    const db = await connectToDatabase();
     const collection = db.collection("words");
 
-    // Get all potential parameters
-    const { lesson, search, list } = request.query;
-    
+    // Get all potential parameters from event.queryStringParameters
+    // Use optional chaining and nullish coalescing for safety
+    const { lesson, search, list } = event.queryStringParameters || {}; // FIX 1: Access query params correctly
+
     let query = {};
     let results = [];
 
-    // --- THE CRITICAL LOGIC SEPARATION ---
     if (list) {
-      // 1. Handle requests for a specific list of words (from Study Session)
       const decodedList = decodeURIComponent(list);
       const wordList = decodedList.split(',').map(word => word.trim());
       query = { bangla: { $in: wordList } };
       results = await collection.find(query).toArray();
 
     } else if (search) {
-      // 2. Handle general search requests (from search bar)
       const decodedSearch = decodeURIComponent(search);
       const searchRegex = new RegExp(escapeRegExp(decodedSearch), 'i'); 
       query = { 
@@ -42,17 +55,14 @@ export default async function handler(request, response) {
       };
       results = await collection.find(query).sort({ bangla: 1 }).toArray();
     
-    } else if (lesson) {
-      // 3. Handle requests for a specific lesson
+    } else if (lesson !== undefined && lesson !== null) { // More robust check for lesson presence
       query = { lesson: parseInt(lesson, 10) };
       results = await collection.find(query).sort({ bangla: 1 }).toArray();
     
     } else {
-      // 4. Default: Get all words (for homepage)
       results = await collection.find({}).sort({ bangla: 1 }).toArray();
     }
     
-    // Convert the results array into the required dictionary object format
     const dictionaryObject = results.reduce((obj, item) => {
         obj[item.bangla] = {
             meaning: item.japanese || '',
@@ -63,10 +73,32 @@ export default async function handler(request, response) {
         return obj;
     }, {});
 
-    response.status(200).json(dictionaryObject);
+    // FIX 2: Return the response in the correct Netlify Functions format
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*", // Or specific origins if needed for CORS
+      },
+      body: JSON.stringify(dictionaryObject),
+    };
 
   } catch (error) {
     console.error("API Error:", error);
-    response.status(500).json({ error: "API Error: " + error.message });
-  } 
+    // FIX 2 (continued): Return error response in the correct format
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({ error: "API Error: " + error.message }),
+    };
+  } finally {
+    // IMPORTANT: Do NOT close the client connection here if you're using global `client`
+    // and `cachedDb` for connection pooling.
+    // The connection should persist across invocations.
+    // client.close() should only be called if you were truly done with the function instance,
+    // which is usually not the case in serverless functions managing database connections.
+  }
 }
