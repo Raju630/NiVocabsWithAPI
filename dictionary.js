@@ -205,10 +205,10 @@ function createWordCard(word) {
     return card;
 }
 
-// MODIFIED to add to userWords
 function addWord() {
     const word = document.getElementById('word-input').value.trim();
     const meaning = document.getElementById('meaning-input').value.trim();
+    const en = document.getElementById('en-input').value.trim(); // Get English meaning
     const category = document.getElementById('category-select').value;
     
     if (word && meaning) {
@@ -222,7 +222,7 @@ function addWord() {
         App.data.userWords[word] = { 
             meaning, 
             category,
-            en: '', // User-added words won't have English or sentences initially
+            en, // Add English meaning to the new word object
             lesson: lessonNumber,
             isUserWord: true, // A flag to identify user-added words
             dateAdded: new Date().toISOString()
@@ -237,6 +237,7 @@ function addWord() {
         
         document.getElementById('word-input').value = '';
         document.getElementById('meaning-input').value = '';
+        document.getElementById('en-input').value = ''; // Clear the new input
         document.getElementById('category-select').value = '';
     }
 }
@@ -263,22 +264,24 @@ function deleteWord(word) {
     fetchAndRenderWords(); // Re-render the view
 }
 
-// MODIFIED to save changes to userWords
 function saveEditedWord() {
-    const originalWord = App.elements.modal.querySelector('#edit-original-word').value;
-    const newWord = App.elements.modal.querySelector('#edit-word-input').value.trim();
-    const newMeaning = App.elements.modal.querySelector('#edit-meaning-input').value.trim();
-    const newCategory = App.elements.modal.querySelector('#edit-category-select').value;
+    const modal = App.elements.modal;
+    const originalWord = modal.querySelector('#edit-original-word').value;
+    const newWord = modal.querySelector('#edit-word-input').value.trim();
+    const newMeaning = modal.querySelector('#edit-meaning-input').value.trim();
+    const newEn = modal.querySelector('#edit-en-input').value.trim(); // Get English meaning
+    const newCategory = modal.querySelector('#edit-category-select').value;
 
     if (newWord && newMeaning) {
         // Get the original data, whether it's from server or user
         const originalData = getWordData(originalWord) || {};
 
-        // Create the new data object, preserving fields like 'en' and 'lesson'
+        // Create the new data object, preserving fields like 'lesson'
         const newWordData = { 
             ...originalData, 
             meaning: newMeaning, 
             category: newCategory,
+            en: newEn, // Add English meaning to the saved object
             isUserWord: true // Any edited word is now considered a "user word"
         };
         
@@ -444,6 +447,7 @@ function updateHeader() {
 }
 function renderDictionaryTab() {
     const container = document.getElementById('dictionary-tab');
+    // NEW LAYOUT for the "Add New Word" form
     container.innerHTML = `
         <div class="section-box">
             <h3 style="text-align:center;">Random Word Practice</h3>
@@ -451,7 +455,38 @@ function renderDictionaryTab() {
         </div>
         <div class="section-box">
             <h3>Add New Word</h3>
-            <div class="input-container"><input type="text" id="word-input" placeholder="Bangla word"><input type="text" id="meaning-input" placeholder="Japanese meaning"><div class="input-select-container"><select id="category-select"><option value="">Category</option><option value="Noun">Noun</option><option value="Verb">Verb</option><option value="Adjective">Adjective</option><option value="Adverb">Adverb</option><option value="Phrase">Phrase</option><option value="Particle">Particle</option><option value="Conjunction">Conjunction</option><option value="Counter">Counter</option><option value="Others">Others</option></select><button id="add-word-btn" class="add-button">Add</button></div></div>
+            <div class="add-word-form">
+                <div class="input-group">
+                    <label for="word-input">Bangla Word</label>
+                    <input type="text" id="word-input" placeholder="e.g., আমি">
+                </div>
+                <div class="input-group">
+                    <label for="meaning-input">Japanese Meaning</label>
+                    <input type="text" id="meaning-input" placeholder="e.g., わたし">
+                </div>
+                <div class="input-group">
+                    <label for="en-input">English Meaning</label>
+                    <input type="text" id="en-input" placeholder="e.g., I, me">
+                </div>
+                <div class="input-group">
+                    <label for="category-select">Category</label>
+                    <select id="category-select">
+                        <option value="">Category</option>
+                        <option value="Noun">Noun</option>
+                        <option value="Verb">Verb</option>
+                        <option value="Adjective">Adjective</option>
+                        <option value="Adverb">Adverb</option>
+                        <option value="Phrase">Phrase</option>
+                        <option value="Particle">Particle</option>
+                        <option value="Conjunction">Conjunction</option>
+                        <option value="Counter">Counter</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+                <div class="add-word-action">
+                    <button id="add-word-btn" class="add-button">Add Word</button>
+                </div>
+            </div>
         </div>
         <div class="section-box" id="word-list-section">
             <div class="study-list-controls"><button id="toggle-select-mode-btn" class="control-button">Select for Study</button><div id="selection-actions" style="display: none;"><button id="start-study-btn" class="add-button">Start Practice (<span id="selected-count">0</span>)</button><button id="clear-selection-btn" class="control-button">Clear</button></div></div>
@@ -845,12 +880,14 @@ function endQuiz() {
     });
 }
 function openEditModal(word) {
-    const { meaning, category } = getWordData(word);
-    App.elements.modal.querySelector('#edit-original-word').value = word;
-    App.elements.modal.querySelector('#edit-word-input').value = word;
-    App.elements.modal.querySelector('#edit-meaning-input').value = meaning;
-    App.elements.modal.querySelector('#edit-category-select').value = category || '';
-    App.elements.modal.style.display = 'flex';
+    const { meaning, category, en } = getWordData(word);
+    const modal = App.elements.modal;
+    modal.querySelector('#edit-original-word').value = word;
+    modal.querySelector('#edit-word-input').value = word;
+    modal.querySelector('#edit-meaning-input').value = meaning;
+    modal.querySelector('#edit-en-input').value = en || ''; // Populate English input
+    modal.querySelector('#edit-category-select').value = category || '';
+    modal.style.display = 'flex';
 }
 function closeEditModal() {
     App.elements.modal.style.display = 'none';
