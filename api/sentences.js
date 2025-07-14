@@ -1,4 +1,4 @@
-// api/sentences.js (CORRECTED for Edge Functions)
+// api/sentences.js (FINAL & Robust for English Terms)
 
 import { MongoClient } from 'mongodb';
 
@@ -20,22 +20,18 @@ function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// The 'event' object is actually a standard Request object in Edge Functions
-export default async function handler(request) {
+export default async function handler(event) {
   try {
     const db = await connectToDatabase();
     const collection = db.collection("sentences");
 
-    // --- FIX: Get query params from the request URL ---
-    const url = new URL(request.url);
-    const term = url.searchParams.get('term');
-    const lang = url.searchParams.get('lang');
-    // --- END FIX ---
+    const { term, lang } = event.queryStringParameters || {};
 
     // Validate 'term' for emptiness after trimming.
+    // If term is provided but is just whitespace, it becomes an empty string.
     const trimmedTerm = term ? term.trim() : '';
 
-    if (!trimmedTerm) { // This check was correctly firing before, causing the 400 error
+    if (!trimmedTerm) { // Now checks for null, undefined, or empty string after trim
       console.error("Sentences API: Missing or empty 'term' parameter.");
       return new Response(JSON.stringify({ error: "A search term is required and cannot be empty." }), {
         status: 400,
@@ -49,9 +45,10 @@ export default async function handler(request) {
     if (lang === 'en') {
       searchField = 'en';
       // For English, split the term into individual words and search for ANY of them.
-      const searchTerms = trimmedTerm.split(/\s+|[~()]|\s*,\s*/).filter(Boolean);
+      // This handles "by ~ (time limit)" better by searching "by", "time", "limit".
+      const searchTerms = trimmedTerm.split(/\s+|[~()]|\s*,\s*/).filter(Boolean); // Split by space, ~, (), comma, filter out empty strings
       
-      if (searchTerms.length === 0) {
+      if (searchTerms.length === 0) { // If splitting results in no valid terms
            console.error("Sentences API: English term resulted in no valid search words.");
            return new Response(JSON.stringify({ error: "Invalid English search term." }), {
                 status: 400,
@@ -86,6 +83,7 @@ export default async function handler(request) {
 
   } catch (error) {
     console.error("API Error in sentences function:", error);
+    // Return a 500 for internal server errors
     return new Response(JSON.stringify({ error: "Failed to fetch sentences due to server error. " + error.message }), {
       status: 500,
       headers: {
