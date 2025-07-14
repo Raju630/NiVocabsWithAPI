@@ -47,6 +47,7 @@ function loadUserData() {
         const userData = JSON.parse(userDataJSON);
         App.data.userWords = userData.userWords || {};
         App.data.deletedWords = userData.deletedWords || [];
+        App.data.weakWords = userData.weakWords || []; // Also load weak words
     }
 }
 
@@ -54,7 +55,8 @@ function loadUserData() {
 function saveUserData() {
     const userData = {
         userWords: App.data.userWords,
-        deletedWords: App.data.deletedWords
+        deletedWords: App.data.deletedWords,
+        weakWords: App.data.weakWords // Also save weak words
     };
     localStorage.setItem('N5_USER_DATA', JSON.stringify(userData));
 }
@@ -248,20 +250,23 @@ function deleteWord(word) {
         return;
     }
 
-    // Add the word to the deletion list
+    // 1. Update data models
     if (!App.data.deletedWords.includes(word)) {
         App.data.deletedWords.push(word);
     }
-    
-    // If it was a word the user added, remove it from their custom list
     delete App.data.userWords[word];
-    
     // Remove from weak words list if present
     App.data.weakWords = App.data.weakWords.filter(w => w !== word);
+
+    // 2. Save the permanent user changes (which now includes weak words)
+    saveUserData();
     
-    saveUserData(); // Persist the deletion
-    updateLiveDictionary(); // Re-merge data
-    fetchAndRenderWords(); // Re-render the view
+    // 3. Update the live in-memory dictionary
+    updateLiveDictionary();
+
+    // 4. Re-render BOTH UI components that might show this word
+    fetchAndRenderWords(); // This refreshes the main dictionary tab
+    renderWeakWordsList(); // *** THIS IS THE FIX: Explicitly refresh the weak words tab view ***
 }
 
 function saveEditedWord() {
@@ -311,9 +316,8 @@ function saveEditedWord() {
 
 // MODIFIED to reset user data as well
 function resetApplication() {
-    if (confirm("Are you sure you want to delete ALL data? This includes server data and all your personal additions/deletions. This action cannot be undone.")) {
-        localStorage.removeItem('N5_APP_DATA'); // Old key for weak words etc.
-        localStorage.removeItem('N5_USER_DATA'); // NEW key for user dictionary
+    if (confirm("Are you sure you want to delete ALL data? This includes all your personal additions and weak words. This action cannot be undone.")) {
+        localStorage.removeItem('N5_USER_DATA'); // Only need to remove this one key now
         alert("Application has been reset. The page will now reload.");
         location.reload();
     }
@@ -469,7 +473,7 @@ function renderDictionaryTab() {
                     <input type="text" id="en-input" placeholder="English Meaning">
                 </div>
                 <div class="input-group">
-                    <label for="category-select">Category</label>
+                    
                     <select id="category-select">
                         <option value="">Category</option>
                         <option value="Noun">Noun</option>
@@ -484,9 +488,10 @@ function renderDictionaryTab() {
                     </select>
                 </div>
                 <div class="add-word-action">
-                    <button id="add-word-btn" class="add-button">Add Word</button>
+                    <button id="add-word-btn" class="add-button">Add</button>
                 </div>
             </div>
+            
         </div>
         <div class="section-box" id="word-list-section">
             <div class="study-list-controls"><button id="toggle-select-mode-btn" class="control-button">Select for Study</button><div id="selection-actions" style="display: none;"><button id="start-study-btn" class="add-button">Start Practice (<span id="selected-count">0</span>)</button><button id="clear-selection-btn" class="control-button">Clear</button></div></div>
@@ -759,7 +764,7 @@ function toggleRandomMeaning() {
         btn.textContent = 'Show Word';
         if (!App.data.weakWords.includes(word)) {
             App.data.weakWords.push(word);
-            localStorage.setItem('N5_APP_DATA', JSON.stringify({ weakWords: App.data.weakWords })); // Save weak words separately
+            saveUserData(); // Use centralized save function
             renderWeakWordsList();
         }
     } else {
@@ -850,7 +855,7 @@ function checkAnswer(element) {
         App.config.currentQuiz.wrongAnswers.push(currentQuestion.word);
         if (!App.data.weakWords.includes(currentQuestion.word)) {
             App.data.weakWords.push(currentQuestion.word);
-            localStorage.setItem('N5_APP_DATA', JSON.stringify({ weakWords: App.data.weakWords }));
+            saveUserData(); // Use centralized save function
             renderWeakWordsList();
         }
     }

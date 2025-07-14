@@ -78,7 +78,7 @@ main { padding: 20px; }
     background: var(--glass-bg);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     padding: 25px; border-radius: var(--border-radius);
-    margin-bottom: 25px; border: 1px solid var(--glass-border);
+    margin-bottom: 7px; border: 1px solid var(--glass-border);
     box-shadow: 0 4px 20px var(--glass-shadow);
 }
 
@@ -236,7 +236,10 @@ input::placeholder { color: #aaa; }
     color: var(--text-color);
 }
 .modal-close { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: white; }
-.input-group { margin-bottom: 15px; }
+.input-group {
+    margin-bottom: 15px;
+    margin-right: 8px;
+}
 .input-group label { display: block; margin-bottom: 5px; font-weight: 700; color: white; }
 
 
@@ -523,7 +526,6 @@ nav {
     text-decoration: none;
     transition: all 0.3s ease;
 }
-
 .facebook-btn {
     background: white;
     color: #1877F2;
@@ -570,7 +572,10 @@ nav {
     padding: 15px 25px; /* Re-apply padding */
     border-bottom: 1px solid var(--glass-border);
 }
-
+.add-word-form{
+    display: flex;
+    justify-content: center;
+}
 .study-list-controls {
     display: flex;
     gap: 15px;
@@ -652,7 +657,6 @@ nav {
     .word-display, .meaning-display {
     font-size: 1.5em;
     font-weight: 500;
-
     }
     .input-container {
     gap: 5px;
@@ -755,6 +759,9 @@ nav {
         margin-bottom: 5px;
         color: #93b7fe;
     }
+    .input-group {
+         margin-bottom:2px ; 
+        }
     .modal-content h3{
         font-size: 1.2em;
         color: rgb(223, 223, 223);
@@ -1126,7 +1133,9 @@ footer {
         background: rgba(0,0,0,0.2);
         max-height: 200px;
     }
-    
+    .add-word-form{
+    display: block;
+}
     .nav-menu-button {
         display: block; /* Show hamburger icon on mobile */
     }
