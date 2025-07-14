@@ -64,11 +64,9 @@ async function fetchAndRenderWords(searchTerm = '') {
     const container = document.getElementById('word-list-container');
     if (!container) return;
     
-    // Show a loading indicator immediately
     container.innerHTML = '<p style="text-align:center; color:#aaa;">Loading...</p>';
     
-    // CHANGE THIS LINE:
-    let apiUrl = '/.netlify/functions/words'; // PREPEND /.netlify/functions/
+    let apiUrl = '/.netlify/functions/words';
 
     const isSearching = searchTerm.length > 0;
 
@@ -80,10 +78,47 @@ async function fetchAndRenderWords(searchTerm = '') {
 
     try {
         const response = await fetch(apiUrl);
-        // ... (rest of the function) ...
+        // Add a log here to see what the response status is
+        console.log('Response status for words API:', response.status); 
+
+        if (!response.ok) {
+            // Check if it's a 400 and log the response body for more info
+            if (response.status === 400) {
+                const errorBody = await response.json();
+                console.error("400 Bad Request for words API:", errorBody);
+                throw new Error(`API request failed with status 400: ${errorBody.error}`);
+            }
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const wordKeys = Object.keys(data).sort();
+        
+        Object.assign(App.data.dictionary, data);
+
+        container.innerHTML = '';
+
+        if (wordKeys.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#888;">No words found.</p>';
+            return;
+        }
+
+        if (isSearching) {
+            console.log(`Search returned ${wordKeys.length} results. Rendering all.`);
+            wordKeys.forEach(word => container.appendChild(createWordCard(word)));
+            window.removeEventListener('scroll', handleInfiniteScroll);
+
+        } else {
+            console.log(`Loaded ${wordKeys.length} words for view. Setting up batch rendering.`);
+            App.config.allWordsForView = wordKeys;
+            App.config.currentPage = 0;
+            renderNextBatch();
+            window.addEventListener('scroll', handleInfiniteScroll);
+        }
+
     } catch (error) {
         console.error("Failed to fetch words:", error);
-        container.innerHTML = '<p style="text-align:center; color:#ff8a80;">Error: Could not load dictionary data.</p>';
+        container.innerHTML = `<p style="text-align:center; color:#ff8a80;">Error: Could not load dictionary data. ${error.message}</p>`;
     }
 }
 

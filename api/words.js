@@ -22,24 +22,52 @@ function escapeRegExp(string) {
 export default async function handler(event) {
   try {
     const db = await connectToDatabase();
-    const collection = db.collection("sentences");
+    const collection = db.collection("words");
 
-    const { term } = event.queryStringParameters || {};
+    // Ensure event.queryStringParameters is an object, even if empty
+    const queryParams = event.queryStringParameters || {};
+    const { lesson, search, list } = queryParams; // Destructure from the (potentially empty) object
+    
+    let query = {};
+    let results = [];
 
-    if (!term) {
-      // FIX: Return a new Response object for error
-      return new Response(JSON.stringify({ error: "A search term is required." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      });
+    if (list) {
+      const decodedList = decodeURIComponent(list);
+      const wordList = decodedList.split(',').map(word => word.trim());
+      query = { bangla: { $in: wordList } };
+      results = await collection.find(query).toArray();
+
+    } else if (search) {
+      const decodedSearch = decodeURIComponent(search);
+      const searchRegex = new RegExp(escapeRegExp(decodedSearch), 'i'); 
+      query = { 
+        $or: [
+          { bangla: { $regex: searchRegex } },
+          { japanese: { $regex: searchRegex } },
+          { english: { $regex: searchRegex } }
+        ]
+      };
+      results = await collection.find(query).sort({ bangla: 1 }).toArray();
+    
+    } else if (lesson !== undefined && lesson !== null) { // This condition is good for lesson
+      query = { lesson: parseInt(lesson, 10) };
+      results = await collection.find(query).sort({ bangla: 1 }).toArray();
+    
+    } else { // This is the default branch for no parameters
+      results = await collection.find({}).sort({ bangla: 1 }).toArray();
     }
     
-    const searchRegex = new RegExp(escapeRegExp(term), 'i');
+    const dictionaryObject = results.reduce((obj, item) => {
+        obj[item.bangla] = {
+            meaning: item.japanese || '',
+            en: item.english || '',
+            category: item.category || 'Others',
+            lesson: item.lesson || 0
+        };
+        return obj;
+    }, {});
 
-    const results = await collection.find({ jp: { $regex: searchRegex } }).limit(50).toArray();
-
-    // FIX: Return a new Response object for success
-    return new Response(JSON.stringify(results), {
+    return new Response(JSON.stringify(dictionaryObject), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -49,8 +77,8 @@ export default async function handler(event) {
 
   } catch (error) {
     console.error("API Error:", error);
-    // FIX: Return a new Response object for error
-    return new Response(JSON.stringify({ error: "Failed to connect to the database or fetch sentences." }), {
+    // You should still check Netlify logs for the specific error here
+    return new Response(JSON.stringify({ error: "API Error: " + error.message }), {
       status: 500,
       headers: {
         "Content-Type": "application/json",
