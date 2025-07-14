@@ -16,34 +16,27 @@ const StudyApp = {
     }
 };
 
-// In study-session.js, REPLACE the old `showExampleSentences` function with this one.
-
+// === NEW, SIMPLIFIED showExampleSentences FUNCTION ===
 async function showExampleSentences(banglaWord) {
     const wordData = StudyApp.data.dictionary[banglaWord];
     if (!wordData) return;
 
-    // Get the Japanese search term
+    // Only use the Japanese term for searching
     const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
-    // Get the English keywords as a clean, comma-separated string
-    const englishKeywords = (wordData.en || '').split(',').map(term => term.trim()).filter(Boolean).join(',');
 
     const modal = StudyApp.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
     const bodyEl = modal.querySelector('#sentence-modal-body');
 
+    // Update modal header to only show the Japanese term
     wordEl.textContent = japaneseSearchTerm;
     bodyEl.innerHTML = '<p>Loading sentences...</p>';
     modal.style.display = 'flex';
 
     try {
-        // --- NEW SIMPLIFIED API CALL ---
-        let apiUrl = `/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`;
-        if (englishKeywords) {
-            apiUrl += `&en_terms=${encodeURIComponent(englishKeywords)}`;
-        }
-        const response = await fetch(apiUrl);
-        // --- END OF NEW API CALL ---
-        
+        // API call is now only for Japanese
+        const response = await fetch(`/.netlify/functions/sentences?term=${encodeURIComponent(japaneseSearchTerm)}&lang=jp`);
+
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error || `Server responded with status ${response.status}`);
@@ -52,29 +45,22 @@ async function showExampleSentences(banglaWord) {
         const relevantSentences = await response.json();
 
         if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No sentences found matching both "${japaneseSearchTerm}" and its English translations.</p>`;
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
         } else {
-            const jpHighlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
-            const enHighlightRegex = englishKeywords 
-                ? new RegExp(`\\b(${englishKeywords.split(',').map(escapeRegExp).join('|')})\\b`, 'gi')
-                : null;
-
+            const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
             let html = '';
 
             relevantSentences.forEach((s, index) => {
                 const jpText = s.jp || '';
-                const enText = s.en || '';
                 const bnText = s.bn || '';
 
-                const jpDisplay = jpText.replace(jpHighlightRegex, (match) => `<strong>${match}</strong>`);
-                const enDisplay = enHighlightRegex 
-                    ? enText.replace(enHighlightRegex, (match) => `<strong>${match}</strong>`)
-                    : enText;
+                // Always highlight the Japanese text
+                const jpDisplay = jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`);
 
+                // Render only Japanese and Bangla sentences
                 html += `
                     <div class="sentence-entry">
                         <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
-                        <p class="sentence-english">(${enDisplay})</p>
                         <p class="sentence-bangla">(${bnText})</p>
                     </div>
                 `;
