@@ -1,4 +1,4 @@
-// api/sentences.js (FINAL & CORRECTED for Response API)
+// api/words.js (CORRECTED for Edge Functions)
 
 import { MongoClient } from 'mongodb';
 
@@ -19,27 +19,31 @@ function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export default async function handler(event) {
+// The 'event' object is actually a standard Request object in Edge Functions
+export default async function handler(request) {
   try {
     const db = await connectToDatabase();
     const collection = db.collection("words");
 
-    // Ensure event.queryStringParameters is an object, even if empty
-    const queryParams = event.queryStringParameters || {};
-    const { lesson, search, list } = queryParams; // Destructure from the (potentially empty) object
+    // --- FIX: Get query params from the request URL ---
+    const url = new URL(request.url);
+    const lesson = url.searchParams.get('lesson');
+    const search = url.searchParams.get('search');
+    const list = url.searchParams.get('list');
+    // --- END FIX ---
     
     let query = {};
     let results = [];
 
     if (list) {
-      const decodedList = decodeURIComponent(list);
-      const wordList = decodedList.split(',').map(word => word.trim());
+      // Note: decodeURIComponent is not needed here, url.searchParams.get() already decodes.
+      const wordList = list.split(',').map(word => word.trim());
       query = { bangla: { $in: wordList } };
       results = await collection.find(query).toArray();
 
     } else if (search) {
-      const decodedSearch = decodeURIComponent(search);
-      const searchRegex = new RegExp(escapeRegExp(decodedSearch), 'i'); 
+      // Note: decodeURIComponent is not needed here.
+      const searchRegex = new RegExp(escapeRegExp(search), 'i'); 
       query = { 
         $or: [
           { bangla: { $regex: searchRegex } },
@@ -49,7 +53,7 @@ export default async function handler(event) {
       };
       results = await collection.find(query).sort({ bangla: 1 }).toArray();
     
-    } else if (lesson !== undefined && lesson !== null) { // This condition is good for lesson
+    } else if (lesson) {
       query = { lesson: parseInt(lesson, 10) };
       results = await collection.find(query).sort({ bangla: 1 }).toArray();
     
@@ -76,8 +80,7 @@ export default async function handler(event) {
     });
 
   } catch (error) {
-    console.error("API Error:", error);
-    // You should still check Netlify logs for the specific error here
+    console.error("API Error in words function:", error);
     return new Response(JSON.stringify({ error: "API Error: " + error.message }), {
       status: 500,
       headers: {
