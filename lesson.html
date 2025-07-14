@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japanese Learner's Hub</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+   <header>
+    <nav>
+        <div class="logo">
+            <a href="/">N5 日本語辞書</a>
+        </div>
+        <div class="nav-menu-button" id="nav-menu-toggle">☰</div>
+        <div class="nav-links-container">
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li class="dropdown-container">
+                    <a href="#" class="dropdown-toggle">Lessons <span class="arrow">▾</span></a>
+                    <div class="dropdown-menu" id="lessonsDropdown">
+                        <!-- Populated by script.js -->
+                    </div>
+                </li>
+                <li><a href="/developer">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+</header>
+
+    <main>
+        <section class="hero">
+            <h1 id="lesson-title">ようこそ！Welcome!</h1>
+            <h2 id="lesson-subtitle"></h2>
+        </section>
+
+        <div class="container" id="dictionary-app-container">
+            <!-- App content will be rendered here by dictionary.js -->
+            <p style="text-align: center;">Loading Application...</p>
+        </div>
+    </main>
+
+    <!-- Edit Word Modal -->
+    <div id="edit-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <button class="modal-close">×</button>
+            <h3>Edit Word</h3>
+            <input type="hidden" id="edit-original-word">
+            <div class="input-group">
+                <label for="edit-word-input">Bangla Word</label>
+                <input type="text" id="edit-word-input">
+            </div>
+            <div class="input-group">
+                <label for="edit-meaning-input">Japanese Meaning</label>
+                <input type="text" id="edit-meaning-input">
+            </div>
+            <div class="input-group">
+                <label for="edit-category-select">Category</label>
+                <select id="edit-category-select">
+                    <option value="">Select Category</option>
+                    <option value="Noun">Noun</option>
+                    <option value="Verb">Verb</option>
+                    <option value="Adjective">Adjective</option>
+                    <option value="Adverb">Adverb</option>
+                    <option value="Phrase">Phrase</option>
+                    <option value="Particle">Particle</option>
+                    <option value="Conjunction">Conjunction</option>
+                    <option value="Counter">Counter</option>
+                    <option value="Others">Others</option>
+                </select>
+            </div>
+            <button id="save-edit-btn" class="add-button">Save Changes</button>
+        </div>
+    </div>
+
+    <button id="scroll-to-top" class="scroll-to-top">↑</button>
+
+    <div id="sentence-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <button class="modal-close">×</button>
+            <h3>Example Sentences for "<span id="sentence-modal-word"></span>"</h3>
+            <div id="sentence-modal-body">
+                <p>Loading sentences...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESTORED: Mnemonic Modal -->
+    <div id="mnemonic-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content mnemonic-modal-content">
+            <button class="modal-close">×</button>
+            <div id="mnemonic-modal-body">
+                <!-- Content will be injected here by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>© 2025 Japanese Learner's Hub By Raju. Happy Learning!</p>
+    </footer>
+    
+    <script src="/config.js" defer></script>
+    <script src="/dictionary.js" defer></script>
+    <script src="/script.js" defer></script>
+</body>
+</html>

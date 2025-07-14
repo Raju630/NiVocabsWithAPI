@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Session - Japanese Learner's Hub</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body class="study-page-body">
+    <header>
+        <nav>
+            <div class="logo study-logo">
+                <a href="/">N5 日本語辞書 - Study Session</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- This is where the entire study session app will render -->
+            <div id="study-app-container">
+                <p style="text-align: center; font-size: 1.2em;">Loading Study Session...</p>
+            </div>
+        </div>
+
+        <!-- CORRECTED MODALS - The `id` attributes are now present -->
+        <!-- Sentence Examples Modal -->
+        <div id="sentence-modal" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <button class="modal-close">×</button>
+                <h3>Example Sentences for "<span id="sentence-modal-word"></span>"</h3>
+                <div id="sentence-modal-body">
+                    <p>Loading sentences...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mnemonic Modal -->
+        <div id="mnemonic-modal" class="modal-overlay" style="display:none;">
+            <div class="modal-content mnemonic-modal-content">
+                <button class="modal-close">×</button>
+                <div id="mnemonic-modal-body">
+                    <!-- Content will be injected here by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script src="study-session.js"></script>
+    <script src="/script.js" defer></script>
+</body>
+</html>
+

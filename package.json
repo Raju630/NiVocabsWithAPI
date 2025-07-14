@@ -1,0 +1,25 @@
+{
+  "name": "mongodb",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mongodb": "^6.8.0"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Raju630/MongoDic.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Raju630/MongoDic/issues"
+  },
+  "homepage": "https://github.com/Raju630/MongoDic#readme"
+}

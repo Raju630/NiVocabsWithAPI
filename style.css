@@ -1,0 +1,1154 @@
+/* --- Global Styles & Glassmorphism Variables --- */
+:root {
+    --primary-color: #1c3d7d; /* Lighter blue for better contrast on dark bg */
+    --secondary-color: #fbd7c0; /* Bright yellow/orange accent */
+    --text-color: #e0e0e0;
+    --text-color-dark: #333;
+    --background-image: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    --glass-bg: rgba(30, 40, 60, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-shadow: rgba(0, 0, 0, 0.2);
+    --success-bg: rgba(40, 167, 69, 0.3);
+    --danger-bg: rgba(220, 53, 69, 0.3);
+    --nav-height: 65px;
+    --border-radius: 8px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Roboto', 'Noto Sans JP', sans-serif;
+    background-image: var(--background-image);
+    background-attachment: fixed;
+    color: var(--text-color);
+    padding-top: var(--nav-height);
+}
+
+a { text-decoration: none; color: var(--primary-color); font-weight: 700; }
+a:hover { color: var(--secondary-color); }
+
+h1, h2, h3 { color: #ffffff; text-shadow: 0 1px 3px var(--glass-shadow); }
+
+.container { max-width: 1100px; margin: 20px auto; padding: 20px; }
+
+/* --- Header & Navigation (Glass) --- */
+header {
+    background: rgba(30, 40, 60, 0.6);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--glass-border);
+    position: fixed;
+    top: 0; left: 0; width: 100%;
+    z-index: 1000;
+}
+
+nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 25px; height: var(--nav-height);
+    max-width: 1200px; margin: 0 auto;
+}
+nav .logo a { font-size: 1.6em; color: #fff; }
+nav .nav-links { list-style: none; display: flex; gap: 15px; }
+nav .nav-links li a {
+    color: var(--text-color); padding: 8px 16px; border-radius: var(--border-radius);
+    transition: background-color 0.3s, color 0.3s;
+}
+nav .nav-links li a:hover, nav .nav-links li a.active { background-color: var(--primary-color); color: white; }
+
+.dropdown-menu {
+    display: none; position: absolute;
+    background: linear-gradient(120deg, #2d3a4def 0%, #1f2838 100%);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px var(--glass-shadow);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--glass-border);
+    min-width: 250px; max-height: 400px;
+    overflow-y: auto; z-index: 1001;
+}
+.dropdown-container.open .dropdown-menu { display: block; }
+.dropdown-menu a { padding: 12px 20px; display: block; }
+
+/* --- Main Content & Hero --- */
+main { padding: 20px; }
+.hero { text-align: center; padding: 20px 20px; margin-bottom: 10px; }
+.hero h1 { font-size: 2.8em;}
+.hero h2 { font-size: 1.2em; font-weight: 400; margin-top: 10px; }
+
+.section-box {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    padding: 25px; border-radius: var(--border-radius);
+    margin-bottom: 25px; border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 20px var(--glass-shadow);
+}
+
+/* --- Tabs Styling --- */
+.nav-tabs {
+    display: flex;
+    gap: 5px;
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 25px;
+}
+.nav-tab {
+    padding: 12px 22px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--text-color);
+    border-bottom: 3px solid transparent;
+    transition: color 0.3s, border-color 0.3s;
+}
+.nav-tab:hover { color: #fff; }
+.nav-tab.active {
+    color: #6891e2;
+    border-bottom-color: var(--primary-color);
+    font-weight: 700;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+
+/* --- Redesigned Random Word Section --- */
+.random-word-container {
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
+.flashcard-container {
+    width: 100%;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.flashcard-content {
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
+    background: rgba(0,0,0,0.2);
+    border-radius: var(--border-radius);
+    text-align: center;
+    /* Removed animation properties here */
+}
+.word-display, .meaning-display {
+    font-size: 2em; font-weight: 700;
+    color: #fff; word-wrap: break-word;
+}
+.meaning-display .speak-icon {
+    font-size: 0.6em; margin-left: 15px;
+    cursor: pointer; vertical-align: middle;
+}
+
+/* --- General Components (Buttons, Inputs) --- */
+.add-button, .control-button {
+    margin-right:auto;margin-left: 12px ;padding: 12px 20px; background-color: var(--primary-color);
+    color: white; border: none; border-radius: var(--border-radius);
+    cursor: pointer; font-size: 16px; font-weight: 700;
+    transition: background-color 0.3s, transform 0.2s;
+}
+.add-button:hover, .control-button:hover { background-color: #2e5099; transform: translateY(-2px); }
+
+input, select {
+    width: 100%; padding: 12px 15px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    background-color: rgba(0,0,0,0.2);
+    color: var(--text-color);
+}
+input::placeholder { color: #aaa; }
+.input-container {
+    display: grid; grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 15px; align-items: center;
+}
+.input-container button { align-self: end; }
+
+/* --- Word Cards (Glass) --- */
+.word-list-container, .weak-words-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+.word-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius); padding: 15px; position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.word-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px var(--glass-shadow); }
+.word-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.word-card-bangla { font-size: 1.2em; font-weight: 700; color: #fff; }
+.word-card-tags { display: flex; gap: 5px; }
+.word-card-category { font-size: 0.8em; padding: 3px 8px; border-radius: 12px; background-color: rgba(0,0,0,0.3); color: #ddd; }
+.lesson-tag { background-color: var(--secondary-color) !important; color: var(--text-color-dark) !important; font-weight: 700; }
+.word-card-japanese { font-size: 1.4em; color: #93b7fe; font-family: 'Noto Sans JP', sans-serif; display: flex; justify-content: space-between; align-items: center; }
+.speak-icon { cursor: pointer; font-size: 0.9em; }
+
+.card-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.3s; }
+.word-card:hover .card-actions { opacity: 1; }
+.card-action-btn { background: rgba(255,255,255,0.1); border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: white; font-size: 14px; }
+.card-action-btn:hover { background: rgba(255,255,255,0.2); }
+
+/* --- QUIZ STYLES --- */
+.quiz-container { text-align: center; }
+.quiz-bangla-word { font-size: 1.6em; margin: 25px 0; font-weight: 500; }
+.quiz-option {
+    padding: 15px;
+    margin: 10px auto;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    max-width: 500px;
+    transition: all 0.2s;
+}
+.quiz-option:hover {
+    border-color: var(--primary-color);
+    background: rgba(130, 170, 255, 0.3);
+    transform: scale(1.02);
+}
+.quiz-option.correct {
+    background: var(--success-bg) !important;
+    border-color: rgba(40, 167, 69, 0.8);
+    color: #fff;
+    font-weight: 700;
+}
+.quiz-option.wrong {
+    background: var(--danger-bg) !important;
+    border-color: rgba(220, 53, 69, 0.8);
+    color: #fff;
+}
+
+
+/* --- MODAL STYLES --- */
+.modal-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000;
+}
+.modal-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    padding: 30px; border-radius: var(--border-radius);
+    width: 90%; max-width: 500px; position: relative;
+    color: var(--text-color);
+}
+.modal-close { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: white; }
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; margin-bottom: 5px; font-weight: 700; color: white; }
+
+
+/* --- FOOTER & SCROLL-TO-TOP --- */
+footer {
+    text-align: center;
+    padding: 25px;
+    background: rgba(0,0,0,0.2);
+    color: #aaa;
+    margin-top: 40px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.scroll-to-top {
+    position: fixed; bottom: 20px; right: 20px;
+    width: 45px; height: 45px;
+    background-color: var(--primary-color);
+    color: white; border-radius: 50%; border: none;
+    font-size: 24px; cursor: pointer; display: none;
+    align-items: center; justify-content: center;
+    box-shadow: 0 2px 10px var(--glass-shadow);
+    transition: all 0.3s;
+}
+.scroll-to-top:hover { background-color: #6c9bff; }
+.scroll-to-top.visible { display: flex; }
+
+
+/* --- RESPONSIVE ADJUSTMENTS --- */
+@media (max-width: 768px) {
+    .input-container { grid-template-columns: 1fr; }
+    nav { flex-direction: row; height: auto; padding: 10px 20px; }
+    body { padding-top: 10px; }
+    body::-webkit-scrollbar {
+    display: none;
+}
+}
+
+nav {
+    position: relative; /* For mobile menu positioning */
+}
+
+.logo a {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Space between title and lesson tag */
+}
+
+.header-lesson-tag {
+    font-size: 0.6em;
+    font-weight: 700;
+    padding: 5px 12px;
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    border-radius: 20px;
+    text-shadow: none;
+}
+
+.nav-menu-button {
+    display: none; /* Hidden on desktop */
+    font-size: 28px;
+    cursor: pointer;
+}
+
+/* --- Responsive Header --- */
+
+/* --- Sentence Modal Styling (UPDATED) --- */
+#sentence-modal .modal-content {
+    max-width: 800px; /* Wider for sentences */
+}
+
+#sentence-modal-body {
+    margin-top: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 15px; /* For scrollbar */
+}
+
+.sentence-entry {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--glass-border);
+}
+.sentence-entry:last-child {
+    border-bottom: none;
+}
+
+.sentence-japanese {
+    font-size: 1.2em;
+    font-family: 'Noto Sans JP', sans-serif;
+    margin-bottom: 8px;
+    color: #93b7fe;
+}
+.modal-content h3{
+    font-size: 1.5em;
+    color: white;
+}
+.sentence-bangla { /* NEW: Style for Bangla meaning */
+    font-size: 1.1em;
+    color: #ccc;
+    margin-top: 5px;
+    padding-left: 10px; /* Indent slightly */
+}
+
+#sentence-modal-body h2 {
+    display: none;;
+}
+/* New "Examples" button on word cards */
+.card-actions {
+    gap: 8px; /* Add more space between buttons */
+}
+
+.card-action-btn.examples {
+    background: rgba(108, 155, 255, 0.2); /* A distinct background */
+}
+
+/* --- Dictionary API Result Styling (REMOVED - no longer needed) --- */
+/*
+#sentence-modal-body h2 { }
+.phonetic { }
+.meaning-block { }
+.meaning-block h4 { }
+.definition-entry { }
+.definition-entry p { }
+.example { }
+.full-translation { }
+*/
+
+/* --- Study List Selection --- */
+.study-list-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: center;
+
+    position: sticky;
+    top: var(--nav-height); /* Stick it right below the navbar */
+    background: rgba(30, 40, 60, .7); /* Give it a background so content doesn't scroll underneath */
+    padding: 15px; /* Add some padding for better spacing */
+    z-index: 10; /* Ensure it stays above the word cards */
+    margin-left: -15px; /* Counteract the parent's padding */
+    margin-right: -15px; /* Counteract the parent's padding */
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    margin-bottom: 15px; /* Adjust margin */
+}
+.word-card.selected {
+    outline: 3px solid var(--secondary-color);
+    transform: scale(1.03);
+    box-shadow: 0 8px 30px rgba(255, 203, 107, 0.3);
+}
+
+.word-card {
+    cursor: default; /* Default cursor */
+}
+
+/* In selection mode, the cursor changes to a pointer */
+.selection-mode .word-card {
+    cursor: pointer;
+}
+
+
+.body.study-page-body {
+    padding-top: var(--nav-height); /* Ensure content isn't hidden by header */
+}
+
+.study-session-grid {
+    display: grid;
+    grid-template-columns: 3fr 2fr; /* 2/3 for practice, 1/3 for list */
+    gap: 25px;
+    align-items: flex-start;
+}
+
+.flashcard-practice-area {
+    position: sticky; /* Makes the flashcard stay in view while scrolling the list */
+    top: calc(var(--nav-height) + 20px);
+}
+
+.study-word-list-area h3 {
+    margin-bottom: 15px;
+}
+
+.study-list-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.study-list-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 15px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.study-list-item .word-bangla {
+    font-weight: 500;
+    font-size: 1.2em;
+    color: #fff;
+}
+
+.study-list-item .word-japanese {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 1.2em;
+    color: #93b7fe;
+}
+
+/* Responsive adjustments for study page */
+
+
+/* --- Developer Profile Page Styles --- */
+.body.developer-page {
+    background: var(--bg-color-start); /* Ensure a consistent background */
+}
+
+.profile-card {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 30px 40px; /* More padding for a premium feel */
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 25px;
+    margin-bottom: 25px;
+}
+
+.profile-picture {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 3px solid var(--primary-color);
+    object-fit: cover; /* Prevents the image from stretching */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+
+.profile-title h1 {
+    font-size: 2.5em;
+    margin-bottom: 5px;
+}
+.input-select-container{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.profile-title h2 {
+    font-size: 1.1em;
+    color: wheat;
+    font-weight: 400;
+}
+
+.profile-body h3 {
+    font-size: 1.6em;
+    color: var(--secondary-color);
+    margin-top: 30px;
+    margin-bottom: 15px;
+    border-bottom: none; /* Remove the underline from the default h3 style */
+}
+
+.profile-body p {
+    font-size: 1.1em;
+    line-height: 1.7;
+    color: var(--text-color);
+    margin-bottom: 15px;
+    text-align: justify;
+    
+}
+
+.social-links {
+    margin-top: 30px;
+    text-align: center;
+    text-justify: inter-word;
+}
+
+.social-button {
+    display: inline-block;
+    padding: 12px 25px;
+    border-radius: var(--border-radius);
+    color: white;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.facebook-btn {
+    background: white;
+    color: #1877F2;
+}
+
+.facebook-btn:hover {
+    background: transparent;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(24, 119, 242, 0.3);
+}
+
+/* Responsive adjustments for profile card */
+@media (max-width: 600px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+/* --- Social Button with Icon --- */
+.social-button {
+    display: inline-flex; /* Use flexbox for easy alignment */
+    align-items: center;  /* Vertically center the icon and text */
+    gap: 10px;            /* Space between the icon and the text */
+    padding: 10px 10px;   /* Adjust padding slightly for a better fit */
+}
+
+.social-button svg {
+    /* The SVG's color is set to 'currentColor', so it will be white like the text */
+    width: 20px;          /* Control the size of the icon */
+    height: 20px;
+}
+
+/* Wrapper for the sticky controls */
+.study-list-controls {
+    position: sticky;
+    top: var(--nav-height);
+    z-index: 10;
+    /* This wrapper will get the glass background */
+    background: rgba(30, 40, 60, .7);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    margin: -25px -25px 20px -25px; /* Stretch to edges of parent .section-box */
+    padding: 15px 25px; /* Re-apply padding */
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.study-list-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+ #category-select{
+        background-color: rgba(0, 0, 0, 0.2);
+        color: rgba(255, 255, 255, 0.537);
+    }
+    #category-select option {
+        background-color: rgb(21, 37, 59);
+        color: var(--text-color);
+    }
+
+@media (max-width: 768px) {
+    .study-session-grid {
+        grid-template-columns: 1fr; /* Stack on smaller screens */
+        gap: 0px;
+    }
+    .flashcard-practice-area {
+        position: static; /* Unstick the flashcard area */
+    }
+    .study-list-container {
+        max-height: none;
+        padding: 0px; /* Allow full scroll */
+    }
+    .study-list-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    }
+
+    .study-list-item .word-bangla {
+        font-weight: 500;
+        font-size: 1.1em;
+        color: #fff;
+    }
+
+    .study-list-item .word-japanese {
+        font-family: 'Noto Sans JP', sans-serif;
+        font-size: 1.1em;
+        color: #93b7fe;
+    }
+    .container {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 0px;
+    }
+    .random-word-controls{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+
+    }
+    .add-button, .control-button{
+        font-size: 0.8em;
+        padding: 12px 12px;
+        margin-left: 0px;
+    }
+    .nav-tabs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    border: none;
+    margin-bottom: 10px;
+    }
+
+    .nav-tab {
+        font-size: 0.9em;
+        padding: 0.5em;
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+    }
+    .word-display, .meaning-display {
+    font-size: 1.5em;
+    font-weight: 500;
+
+    }
+    .input-container {
+    gap: 5px;
+    }
+    #add-word-btn{
+        padding: 12px 20px;
+        font-size: 0.9em;
+        border: 1px solid var(--glass-border);
+    }
+    input, select {
+    font-size: 0.9em;
+    }
+    .hero h1 {
+    font-size: 2em;
+    }
+    .hero h2 {
+    font-size: 1.1em;
+    }
+    .hero p {
+        font-size: .8em;
+    }
+    .hero {
+    padding: 50px 5px 0px 0px;
+    margin-bottom: 30px;
+    }
+    .section-box h3{
+        padding: 0px 0px 15px 0px;
+    }
+    #category-select{
+        background-color: rgba(0, 0, 0, 0.2);
+        color: rgba(255, 255, 255, 0.537);
+    }
+    #category-select option {
+        background-color: rgb(46, 85, 137);
+        color: var(--text-color);
+    }
+    .section-box{
+        margin-bottom: 5px;
+    }
+    #selection-actions{
+        gap: 5px;
+    }
+    #word-list-title{
+        font-size: 0.8em;
+    }
+    .word-list-container, .weak-words-list {
+    gap: 5px;
+    }
+    .section-box h3{
+        font-weight: 500;
+    }
+    .profile-title h1 {
+    font-size: 2.5em;
+    margin-bottom: 5px;
+    }
+    .profile-title h2 {
+    font-size: 0.8em;
+    margin-bottom: 5px;
+    font-weight: 500;
+    }
+    .profile-card{
+        padding: 0px 10px;
+    }
+    .profile-body h3 {
+        font-size: 1.2em;
+        font-weight: 600;
+        padding: 0px 0px 0px 10px;
+        margin: 0px 0px 10px 0px;
+    }
+    .profile-body p {
+        padding: 0px 10px;
+        font-size: 0.9em;
+        line-height: 1.3;
+        letter-spacing: 0.5px;
+    }
+    .profile-picture {
+    width: 180px;
+    height: 180px;
+    }
+    .profile-header{
+        gap: 10px;
+    }
+    .modal-content{
+        padding: 10px 15px;
+    }
+    #sentence-modal-body {
+    margin-top: 10px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 0px;
+    }
+    .sentence-entry {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--glass-border);
+    }
+    .sentence-japanese {
+        font-size: 1.2em;
+        font-family: 'Noto Sans JP', sans-serif;
+        margin-bottom: 5px;
+        color: #93b7fe;
+    }
+    .modal-content h3{
+        font-size: 1.2em;
+        color: rgb(223, 223, 223);
+        padding-right: 15px;
+    }
+    .sentence-bangla { /* NEW: Style for Bangla meaning */
+        font-size: 1.1em;
+        color: #e3e3e3;
+        margin-top: 5px;
+        padding-left: 10px; /* Indent slightly */
+    }
+    .modal-close {
+    font-size: 25px;
+    color: white;
+    }
+    .bn-jp{
+        margin-bottom: 10px;
+    }
+    .quiz-bangla-word{
+        font-size: 1.2em;
+    }
+    .quiz-option{
+        font-size: 1em;
+    }
+}
+
+
+/* --- Highlight Searched Word in Examples --- */
+.sentence-japanese strong {
+    color: var(--secondary-color);
+    font-weight: 700;
+    background-color: rgba(251, 215, 192, 0.15);
+    padding: 0 4px;
+    border-radius: 4px;
+}
+
+/* --- Study List Item Enhancements --- */
+.study-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Vertically align items */
+    padding: 12px 15px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.study-list-item .word-japanese {
+    display: block; /* Make Japanese word appear on a new line */
+    margin-top: 4px;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: #93b7fe;
+}
+
+.study-list-item .examples {
+    /* Make the button visible without hover */
+    opacity: 0.8;
+    transition: opacity 0.3s;
+}
+
+.study-list-item:hover .examples {
+    opacity: 1;
+}
+
+/* --- Visual Mnemonics Styles (Pexels) --- */
+.mnemonic-image-container {
+    margin-top: 20px;
+    width: 100%;
+    max-width: 450px; /* Control max size of the image container */
+    height: auto;
+    min-height: 100px; /* Reserve some space even when empty */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* Space between image and credit */
+}
+
+.mnemonic-image-container img {
+    max-width: 100%;
+    max-height: 300px;
+    height: auto;
+    border-radius: var(--border-radius);
+    background-color: rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 15px var(--glass-shadow);
+    object-fit: contain; /* Ensures the whole image is visible */
+    transition: transform 0.2s ease-in-out;
+}
+
+.mnemonic-image-container a:hover img {
+    transform: scale(1.03);
+}
+
+.image-loading-text, .image-error-text {
+    color: #aaa;
+    font-style: italic;
+}
+
+.image-error-text {
+    color: #ff8a80; /* A soft red for errors */
+}
+
+.pexels-credit {
+    font-size: 0.75em;
+    color: #888 !important;
+    text-decoration: none;
+    align-self: flex-end; /* Puts credit on the right */
+}
+
+.pexels-credit:hover {
+    color: #ccc !important;
+}
+
+/* --- Study List Item Actions --- */
+.study-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Vertically align items */
+    padding: 12px 15px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.study-item-actions {
+    display: flex;
+    gap: 8px; /* Space between buttons */
+}
+
+/* --- Visual Mnemonics Styles --- */
+.mnemonic-image-container {
+    margin-bottom: 20px; /* Space between image and the list below */
+    width: 100%;
+    height: auto;
+    display: flex; /* Changed from 'none' to 'flex' by JS */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 15px;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: var(--border-radius);
+}
+
+.mnemonic-image-container img {
+    max-width: 100%;
+    max-height: 300px;
+    height: auto;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 15px var(--glass-shadow);
+    object-fit: contain;
+    transition: transform 0.2s ease-in-out;
+}
+
+.mnemonic-image-container a:hover img {
+    transform: scale(1.03);
+}
+
+.image-loading-text, .image-error-text {
+    color: #aaa;
+    font-style: italic;
+}
+
+.image-error-text {
+    color: #ff8a80;
+}
+
+.pexels-credit {
+    font-size: 0.75em;
+    color: #888 !important;
+    text-decoration: none;
+    align-self: flex-end;
+}
+
+.pexels-credit:hover {
+    color: #ccc !important;
+}
+
+/* Style for the new mnemonic button */
+.card-action-btn.mnemonic {
+    background: rgba(80, 180, 130, 0.2); /* A distinct green-ish background */
+}
+
+
+/* --- Study List Item Actions --- */
+.study-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.study-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.card-action-btn.mnemonic {
+    background: rgba(80, 180, 130, 0.2);
+}
+
+/* --- Mnemonic Modal Styles --- */
+.mnemonic-modal-content {
+    max-width: 500px;
+    text-align: center;
+}
+
+#mnemonic-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.mnemonic-word-info {
+    padding: 10px;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: var(--border-radius);
+}
+
+.mnemonic-bangla {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.mnemonic-japanese {
+    font-size: 1.8em;
+    color: var(--secondary-color);
+    font-family: 'Noto Sans JP', sans-serif;
+}
+
+.mnemonic-image-link img {
+    max-width: 100%;
+    max-height: 350px;
+    height: auto;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 15px var(--glass-shadow);
+    object-fit: contain;
+    transition: transform 0.2s ease-in-out;
+}
+
+.mnemonic-image-link:hover img {
+    transform: scale(1.03);
+}
+
+.image-loading-text, .image-error-text {
+    color: #aaa;
+    font-style: italic;
+    padding: 20px;
+}
+
+.image-error-text {
+    color: #ff8a80;
+}
+
+.pexels-credit {
+    font-size: 0.75em;
+    color: #888 !important;
+    text-decoration: none;
+    align-self: flex-end;
+}
+
+.pexels-credit:hover {
+    color: #ccc !important;
+}
+
+/* Highlighted Word Style */
+.sentence-japanese strong {
+    color: var(--secondary-color);
+    font-weight: 700;
+    background-color: rgba(251, 215, 192, 0.15);
+    padding: 0 4px;
+    border-radius: 4px;
+}
+/* Style for the new mnemonic button on word cards */
+.card-action-btn.mnemonic {
+    background: rgba(80, 180, 130, 0.2);
+}
+
+footer {
+    text-align: center;
+    padding: 25px;
+    background: rgba(0,0,0,0.2);
+    color: #aaa;
+    margin-top: 40px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.scroll-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 45px;
+    height: 45px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    z-index: 1001; /* Ensure it's above most content */
+    box-shadow: 0 2px 10px var(--glass-shadow);
+    transition: opacity 0.3s, transform 0.3s;
+    opacity: 0;
+    transform: translateY(100px); /* Start off-screen */
+}
+
+.scroll-to-top.visible {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0); /* Animate into view */
+}
+
+.scroll-to-top:hover {
+    background-color: #6c9bff;
+    transform: scale(1.1);
+}
+
+
+
+@media (max-width: 768px) {
+    nav {
+        flex-wrap: wrap; /* Allow items to wrap */
+    }
+    .study-logo{
+        font-size: 0.9em;
+    }
+
+    .nav-links-container {
+        display: none; /* Hide nav links by default on mobile */
+        width: 100%;
+        max-height: 0;
+        /*overflow: hidden;*/
+        transition: max-height 0.4s ease-in-out;
+    }
+    
+    .nav-links-container.active {
+        display: block;
+        max-height: 300px; /* Animate open */
+    }
+
+    .nav-links {
+        flex-direction: column;
+        width: 100%;
+        padding-top: 10px;
+    }
+
+    .nav-links li {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .nav-links li a {
+        display: block;
+        padding: 15px;
+    }
+    
+    .dropdown-menu {
+        position: static;
+        box-shadow: none;
+        border: none;
+        background: rgba(0,0,0,0.2);
+        max-height: 200px;
+    }
+    
+    .nav-menu-button {
+        display: block; /* Show hamburger icon on mobile */
+    }
+    .scroll-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    box-shadow: 0 2px 10px var(--glass-shadow);
+    transition: opacity 0.3s, transform 0.3s;
+    opacity: 0;
+    transform: translateY(100px);
+}
+}

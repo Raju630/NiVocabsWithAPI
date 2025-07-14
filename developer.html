@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About the Developer - NihongoHub</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body class="developer-page">
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="/">N5 日本語辞書</a>
+            </div>
+            <div class="nav-menu-button" id="nav-menu-toggle">☰</div>
+            <div class="nav-links-container">
+                <ul class="nav-links">
+                    <li><a href="/">Home</a></li>
+                    <li class="dropdown-container">
+                        <a href="#" class="dropdown-toggle">Lessons <span class="arrow">▾</span></a>
+                        <div class="dropdown-menu" id="lessonsDropdown">
+                            <!-- Populated by script.js -->
+                        </div>
+                    </li>
+                    <!-- Add the new "Contact" link here -->
+                    <li><a href="developer.html" class="active">Contact</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="profile-card section-box">
+                <div class="profile-header">
+                    <img src="raju.png" alt="Developer's Picture" class="profile-picture">
+                    <div class="profile-title">
+                        <h1>Raju Sheikh</h1>
+                        <h2>EEE Engineer, Hobbyist Web Developer & Japanese Language Learner</h2>
+                    </div>
+                </div>
+
+                <div class="profile-body">
+                    <h3>About Me</h3>
+                    <p>
+                        Hello! My name is Raju, and I am the creator of this Japanese Learner's Hub. As a fellow student of the Japanese language, I know how challenging it can be to memorize vocabulary. I built this tool to help myself and other learners from the Bangla-speaking community to practice and master the N5 words in an interactive and efficient way.
+                    </p>
+                    <p>
+                        My goal was to create a clean, modern, and useful application that you can personalize with your own word lists and study at your own pace. I hope you find it helpful on your journey to learning Japanese!
+                    </p>
+
+                    <h3>Connect with Me</h3>
+                    <p>
+                        I would love to hear your feedback or suggestions for new features. You can connect with me on Facebook.
+                    </p>
+                    <!-- REPLACE the old social-links div with this new one -->
+                    <div class="social-links">
+                        <a href="https://www.facebook.com/profile.php?id=100005197486240" target="_blank" class="social-button facebook-btn">
+                            <!-- Facebook SVG Logo -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+                            </svg>
+                            <span>Connect on Facebook</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2025 Japanese Learner's Hub By Raju. Happy Learning!</p>
+    </footer>
+
+    <!-- Only the main script.js is needed here for the nav dropdown -->
+    <script src="/config.js" defer></script>
+    <script src="/script.js" defer></script>
+</body>
+</html>

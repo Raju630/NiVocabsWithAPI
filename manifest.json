@@ -1,0 +1,17 @@
+{
+  "name": "NihongoHub",
+  "short_name": "NihongoHub",
+  "description": "A personal hub for learning N5 Japanese vocabulary.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1c3d7d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
