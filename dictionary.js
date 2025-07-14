@@ -465,31 +465,36 @@ function createWordCard(word) {
     return card;
 }
 
-// In dictionary.js, REPLACE the old showExampleSentences function with this one.
+// dictionary.js
 
+// ... (keep all other code the same) ...
+
+// === NEW, COMBINED-SEARCH showExampleSentences FUNCTION ===
 async function showExampleSentences(banglaWord) {
     const wordData = App.data.dictionary[banglaWord];
     if (!wordData) return;
 
+    // 1. Prepare search terms
     const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
-    const englishSearchTerms = (wordData.en || '').split(',').map(term => term.trim()).filter(Boolean);
+    const englishKeywords = (wordData.en || '').split(',').map(term => term.trim()).filter(Boolean);
 
     const modal = App.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
     const bodyEl = modal.querySelector('#sentence-modal-body');
 
-    wordEl.textContent = japaneseSearchTerm;
+    // 2. Update modal header to show both terms, as they are both used in the search
+    wordEl.textContent = `${japaneseSearchTerm} / ${englishKeywords.join(', ')}`;
     bodyEl.innerHTML = '<p>Loading sentences...</p>';
     modal.style.display = 'flex';
 
     try {
-        // --- NEW: Construct a single API call ---
+        // 3. Build the new API URL with both jp_term and en_terms
         let apiUrl = `/.netlify/functions/sentences?jp_term=${encodeURIComponent(japaneseSearchTerm)}`;
-        if (englishSearchTerms.length > 0) {
-            // Join English terms with a comma for the API
-            apiUrl += `&en_terms=${encodeURIComponent(englishSearchTerms.join(','))}`;
+        if (englishKeywords.length > 0) {
+            apiUrl += `&en_terms=${encodeURIComponent(englishKeywords.join(','))}`;
         }
-        
+
+        console.log("Frontend: Calling API:", apiUrl);
         const response = await fetch(apiUrl);
 
         if (!response.ok) {
@@ -500,23 +505,25 @@ async function showExampleSentences(banglaWord) {
         const relevantSentences = await response.json();
 
         if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found matching both "${japaneseSearchTerm}" and "${englishSearchTerms.join('/')}".</p>`;
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No sentences found matching both "${japaneseSearchTerm}" and "${englishKeywords.join(' / ')}".</p>`;
         } else {
-            // --- NEW: Highlighting for both languages ---
+            // 4. Prepare regex for highlighting both languages
             const jpHighlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
-            
-            // Create a regex to match any of the English search terms
-            const enHighlightRegex = new RegExp(englishSearchTerms.map(escapeRegExp).join('|'), 'gi');
-            
+            const enHighlightRegex = new RegExp(englishKeywords.map(escapeRegExp).join('|'), 'gi');
+
             let html = '';
             relevantSentences.forEach((s, index) => {
                 const jpText = s.jp || '';
-                const enText = s.en || ''; // We will now display the English sentence again
+                const enText = s.en || ''; // We need the English text again
                 const bnText = s.bn || '';
 
-                const jpDisplay = jpText.replace(jpHighlightRegex, match => `<strong>${match}</strong>`);
-                const enDisplay = enText.replace(enHighlightRegex, match => `<strong>${match}</strong>`);
+                // 5. Highlight matches in both Japanese and English sentences
+                const jpDisplay = jpText.replace(jpHighlightRegex, (match) => `<strong>${match}</strong>`);
+                const enDisplay = englishKeywords.length > 0 
+                    ? enText.replace(enHighlightRegex, (match) => `<strong>${match}</strong>`)
+                    : enText;
 
+                // 6. Re-introduce the English sentence display
                 html += `
                     <div class="sentence-entry">
                         <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
@@ -535,6 +542,8 @@ async function showExampleSentences(banglaWord) {
         }
     }
 }
+
+// ... (the rest of dictionary.js remains the same) ...
 
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
