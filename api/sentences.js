@@ -1,4 +1,4 @@
-// api/sentences.js (FINAL & Robust for English Terms)
+// api/sentences.js (FINAL - With "AND" Logic for JP & EN)
 
 import { MongoClient } from 'mongodb';
 
@@ -20,55 +20,51 @@ function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export default async function handler(event) {
+export default async function handler(request) {
   try {
     const db = await connectToDatabase();
     const collection = db.collection("sentences");
 
-    const { term, lang } = event.queryStringParameters || {};
+    const url = new URL(request.url);
+    const jpTerm = url.searchParams.get('jp_term');
+    const enTerms = url.searchParams.get('en_terms'); // e.g., "time,hour"
 
-    // Validate 'term' for emptiness after trimming.
-    // If term is provided but is just whitespace, it becomes an empty string.
-    const trimmedTerm = term ? term.trim() : '';
+    const trimmedJpTerm = jpTerm ? jpTerm.trim() : '';
 
-    if (!trimmedTerm) { // Now checks for null, undefined, or empty string after trim
-      console.error("Sentences API: Missing or empty 'term' parameter.");
-      return new Response(JSON.stringify({ error: "A search term is required and cannot be empty." }), {
+    if (!trimmedJpTerm) {
+      console.error("Sentences API: Missing required 'jp_term' parameter.");
+      return new Response(JSON.stringify({ error: "A Japanese search term is required." }), {
         status: 400,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       });
     }
 
-    let searchField;
     let mongoQuery = {};
 
-    if (lang === 'en') {
-      searchField = 'en';
-      // For English, split the term into individual words and search for ANY of them.
-      // This handles "by ~ (time limit)" better by searching "by", "time", "limit".
-      const searchTerms = trimmedTerm.split(/\s+|[~()]|\s*,\s*/).filter(Boolean); // Split by space, ~, (), comma, filter out empty strings
+    // Create the regex for the mandatory Japanese term
+    const jpRegex = new RegExp(escapeRegExp(trimmedJpTerm), 'i');
+    
+    // Check if English terms were provided for the "AND" condition
+    const enTermsArray = enTerms ? enTerms.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+    if (enTermsArray.length > 0) {
+      // --- NEW "AND" LOGIC ---
+      // Condition B: Match AT LEAST ONE of the English keywords
+      const orConditions = enTermsArray.map(word => ({
+        en: { $regex: new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i') } // Use word boundaries for better matching
+      }));
       
-      if (searchTerms.length === 0) { // If splitting results in no valid terms
-           console.error("Sentences API: English term resulted in no valid search words.");
-           return new Response(JSON.stringify({ error: "Invalid English search term." }), {
-                status: 400,
-                headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-            });
-      }
+      // Combine Condition A (Japanese) and Condition B (English) with $and
+      mongoQuery = {
+        $and: [
+          { jp: { $regex: jpRegex } }, // Condition A
+          { $or: orConditions }        // Condition B
+        ]
+      };
 
-      // Create an $or query for each word
-      const orConditions = searchTerms.map(word => {
-          const regex = new RegExp(escapeRegExp(word), 'i');
-          const condition = {};
-          condition[searchField] = { $regex: regex };
-          return condition;
-      });
-      mongoQuery = { $or: orConditions };
-
-    } else { // Default to Japanese searchField
-      searchField = 'jp';
-      const searchRegex = new RegExp(escapeRegExp(trimmedTerm), 'i');
-      mongoQuery[searchField] = { $regex: searchRegex };
+    } else {
+      // Fallback: If no English terms are provided, just search by Japanese term
+      mongoQuery = { jp: { $regex: jpRegex } };
     }
 
     const results = await collection.find(mongoQuery).limit(50).toArray();
@@ -83,7 +79,6 @@ export default async function handler(event) {
 
   } catch (error) {
     console.error("API Error in sentences function:", error);
-    // Return a 500 for internal server errors
     return new Response(JSON.stringify({ error: "Failed to fetch sentences due to server error. " + error.message }), {
       status: 500,
       headers: {
