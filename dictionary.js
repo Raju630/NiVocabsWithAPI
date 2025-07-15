@@ -89,13 +89,30 @@ document.addEventListener('DOMContentLoaded', () => {
     renderApp();
     fetchAndRenderWords(); // This will now fetch server data and merge it
 });
-
+// NEW function to render skeleton placeholders
+function renderSkeletons(container) {
+    container.innerHTML = ''; // Clear any previous content like "Loading..."
+    const skeletonHTML = `
+        <div class="skeleton-card">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line text"></div>
+        </div>
+    `;
+    // Render 12 skeletons to fill the screen on most devices
+    for (let i = 0; i < 12; i++) {
+        container.innerHTML += skeletonHTML;
+    }
+}
 
 async function fetchAndRenderWords(searchTerm = '') {
     const container = document.getElementById('word-list-container');
     if (!container) return;
     
-    container.innerHTML = '<p style="text-align:center; color:#aaa;">Loading...</p>';
+    // THIS IS THE NEW LINE:
+    renderSkeletons(container); // Show skeletons immediately.
+
+    // The rest of the function remains the same.
+    // The old "Loading..." text is no longer needed.
     
     let apiUrl = '/.netlify/functions/words';
 
@@ -109,33 +126,33 @@ async function fetchAndRenderWords(searchTerm = '') {
 
     try {
         const response = await fetch(apiUrl);
-        if (!response.ok) throw new Error('API request failed');
+        if (!response.ok) {
+            const errorBody = await response.json();
+            throw new Error(`API request failed: ${errorBody.error || response.statusText}`);
+        }
         
-        // Store server data separately
         App.data.serverDictionary = await response.json();
-        
-        // Create the final, merged dictionary for display
         updateLiveDictionary();
 
-        // The rest of the function now works with the 'liveDictionary'
         const wordKeys = Object.keys(App.data.liveDictionary).sort();
-
-        container.innerHTML = '';
+        
+        // This line will automatically remove the skeletons when the real data is ready
+        container.innerHTML = ''; 
 
         if (wordKeys.length === 0) {
             container.innerHTML = '<p style="text-align:center; color:#888;">No words found.</p>';
             return;
         }
 
-        console.log(`Loaded ${wordKeys.length} words for view. Setting up batch rendering.`);
+        // The rest of the logic for batch rendering...
         App.config.allWordsForView = wordKeys;
         App.config.currentPage = 0;
-        renderNextBatch(); // This function will now use the live dictionary via helpers
+        renderNextBatch();
         window.addEventListener('scroll', handleInfiniteScroll);
 
     } catch (error) {
         console.error("Failed to fetch words:", error);
-        container.innerHTML = `<p style="text-align:center; color:#ff8a80;">Error: Could not load dictionary data.</p>`;
+        container.innerHTML = `<p style="text-align:center; color:#ff8a80;">Error: Could not load dictionary data. ${error.message}</p>`;
     }
 }
 
@@ -332,8 +349,10 @@ function getWordPool() {
         : allWords;
 }
 
+// Find this function in your dictionary.js file and replace it.
+
 async function showExampleSentences(banglaWord) {
-    const wordData = getWordData(banglaWord); // Use helper to get correct data
+    const wordData = getWordData(banglaWord);
     if (!wordData) return;
 
     const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
@@ -351,7 +370,19 @@ async function showExampleSentences(banglaWord) {
         return;
     }
     
-    bodyEl.innerHTML = '<p>Loading sentences...</p>';
+    // --- THIS IS THE CHANGE ---
+    // Instead of a simple text, render 3 skeleton sentence placeholders.
+    let skeletonHTML = '';
+    for (let i = 0; i < 3; i++) {
+        skeletonHTML += `
+            <div class="skeleton-sentence">
+                <div class="skeleton-line title"></div>
+                <div class="skeleton-line text"></div>
+            </div>
+        `;
+    }
+    bodyEl.innerHTML = skeletonHTML;
+    // --- END OF CHANGE ---
 
     try {
         const apiUrl = `/.netlify/functions/sentences?jp_term=${encodeURIComponent(japaneseSearchTerm)}&en_term=${encodeURIComponent(englishSearchTerm)}`;
@@ -379,6 +410,7 @@ async function showExampleSentences(banglaWord) {
                     </div>
                 `;
             });
+            // This line will automatically replace the skeletons with the real content
             bodyEl.innerHTML = html;
         }
     } catch (error) {

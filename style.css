@@ -167,6 +167,102 @@ input::placeholder { color: #aaa; }
     display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
 }
+/* --- NEW: Skeleton Loader Styles --- */
+.skeleton-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Space between skeleton elements */
+}
+/* --- NEW: Skeleton for Sentence Modal --- */
+.skeleton-sentence {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--glass-border);
+}
+.skeleton-sentence .skeleton-line.title {
+    height: 18px; /* Slightly smaller for sentence lines */
+    margin-bottom: 10px;
+}
+.skeleton-sentence .skeleton-line.text {
+    height: 16px;
+    width: 70%; /* Sub-lines are often shorter */
+}
+
+.skeleton-line {
+    background-color: rgba(130, 140, 160, 0.2);
+    border-radius: 4px;
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-line.title {
+    width: 60%;
+    height: 20px;
+}
+
+.skeleton-line.text {
+    width: 80%;
+    height: 24px;
+}
+/* --- NEW: Skeleton for Study Session Page --- */
+.skeleton-study-grid {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 25px;
+    align-items: flex-start;
+}
+
+.skeleton-flashcard-box,
+.skeleton-word-list-box {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 25px;
+}
+
+.skeleton-flashcard-content {
+    height: 160px;
+    width: 100%;
+    margin: 20px 0;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius);
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-line.button {
+    height: 45px;
+    width: 160px;
+    margin: 0 auto;
+}
+
+.skeleton-list-item {
+    height: 50px;
+    width: 100%;
+    margin-bottom: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius);
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsive adjustment for study skeleton */
+@media (max-width: 768px) {
+    .skeleton-study-grid {
+        grid-template-columns: 1fr;
+    }
+}
+/* Animation for the pulsing effect */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
 .word-card {
     background: var(--glass-bg);
     backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
