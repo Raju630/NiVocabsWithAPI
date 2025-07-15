@@ -1,55 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Session - Japanese Learner's Hub</title>
-    <link rel="icon" type="image/png" href="icon.png">
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Study Session - Redirecting...</title>
+        <link rel="icon" type="image/png" href="icon.png">
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="style.css">
+    </head>
 <body class="study-page-body">
-    <header>
-        <nav>
-            <div class="logo study-logo">
-                <a href="/">N5 日本語辞書 - Study Session</a>
-            </div>
-        </nav>
-    </header>
-
     <main>
-        <div class="container">
-            <!-- This is where the entire study session app will render -->
-            <div id="study-app-container">
-                <p style="text-align: center; font-size: 1.2em;">Loading Study Session...</p>
-            </div>
-        </div>
-
-        <!-- CORRECTED MODALS - The `id` attributes are now present -->
-        <!-- Sentence Examples Modal -->
-        <div id="sentence-modal" class="modal-overlay" style="display:none;">
-            <div class="modal-content">
-                <button class="modal-close">×</button>
-                <h3>Example Sentences for "<span id="sentence-modal-word"></span>"</h3>
-                <div id="sentence-modal-body">
-                    <p>Loading sentences...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Mnemonic Modal -->
-        <div id="mnemonic-modal" class="modal-overlay" style="display:none;">
-            <div class="modal-content mnemonic-modal-content">
-                <button class="modal-close">×</button>
-                <div id="mnemonic-modal-body">
-                    <!-- Content will be injected here by JavaScript -->
-                </div>
-            </div>
+        <div class="container" style="text-align: center; padding-top: 50px;">
+            <h1>Redirecting...</h1>
+            <p>To start a study session, please select words from the main dictionary page.</p>
+            <p>You will be redirected shortly.</p>
+            <a href="/">Go to Homepage</a>
         </div>
     </main>
-    
-    <script src="study-session.js"></script>
-    <script src="/script.js" defer></script>
+    <script>
+        // This script ensures that if a user lands here directly, they are sent back to the homepage.
+        // The main app handles the study session view dynamically.
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 3000);
+    </script>
 </body>
 </html>
-
