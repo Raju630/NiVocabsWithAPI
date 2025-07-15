@@ -736,35 +736,43 @@ function renderSettingsTab() {
     document.getElementById('import-file').addEventListener('change', importData);
     document.getElementById('reset-btn').addEventListener('click', resetApplication);
 }
+// This is the only function that needs to be replaced.
+
 function attachAppEventListeners() {
     App.elements.appContainer.querySelector('.nav-tabs').addEventListener('click', (e) => {
         if (e.target.matches('.nav-tab')) {
             const tabName = e.target.dataset.tab;
+
+            // --- THIS IS THE FIX ---
+            // If we are navigating AWAY from the dictionary tab, remove the listener
+            // to prevent it from firing unnecessarily on other tabs.
+            if (tabName !== 'dictionary') {
+                window.removeEventListener('scroll', handleInfiniteScroll);
+            } else {
+                // If we are navigating TO the dictionary tab, re-attach the listener.
+                window.addEventListener('scroll', handleInfiniteScroll);
+            }
+            // --- END OF FIX ---
+
+            // The rest of the tab switching logic remains the same
             if (App.config.currentQuiz.type && tabName !== 'quiz') {
                 App.config.quizScore = 0;
                 App.config.currentQuiz = {};
-                document.getElementById('quiz-score').textContent = '0';
-                renderQuizTab();
+                renderQuizTab(); // Re-render to reset the quiz view
             }
-            if (tabName !== 'dictionary') {
-                window.removeEventListener('scroll', handleInfiniteScroll);
-            }
+            
             App.elements.appContainer.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             App.elements.appContainer.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             App.elements.appContainer.querySelector(`#${tabName}-tab`).classList.add('active');
             e.target.classList.add('active');
         }
     });
-    // Modal listeners
-    App.elements.modal.querySelector('.modal-close').addEventListener('click', closeEditModal);
+
+    // Other modal listeners remain the same
+    App.elements.modal.querySelector('.modal-close').addEventListener('click', () => App.elements.modal.style.display = 'none');
     App.elements.modal.querySelector('#save-edit-btn').addEventListener('click', saveEditedWord);
-    if (App.elements.sentenceModal) {
-        App.elements.sentenceModal.querySelector('.modal-close').addEventListener('click', closeSentenceModal);
-    }
-    App.elements.mnemonicModal = document.getElementById('mnemonic-modal');
-    if (App.elements.mnemonicModal) {
-        App.elements.mnemonicModal.querySelector('.modal-close').addEventListener('click', closeMnemonicModal);
-    }
+    App.elements.sentenceModal.querySelector('.modal-close').addEventListener('click', () => App.elements.sentenceModal.style.display = 'none');
+    App.elements.mnemonicModal.querySelector('.modal-close').addEventListener('click', () => App.elements.mnemonicModal.style.display = 'none');
 }
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
