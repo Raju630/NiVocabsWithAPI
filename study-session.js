@@ -1,4 +1,4 @@
-// study-session.js (FINAL - SIMPLIFIED SENTENCES)
+// study-session.js (With Skeleton Loader)
 
 const StudyApp = {
     data: {
@@ -16,126 +16,33 @@ const StudyApp = {
     }
 };
 
-// === UPDATED showExampleSentences FUNCTION ===
-// Find this function in your study-session.js file and replace it.
+// --- This is the main execution block that runs on page load ---
+document.addEventListener('DOMContentLoaded', async () => {
 
-async function showExampleSentences(banglaWord) {
-    const wordData = StudyApp.data.dictionary[banglaWord];
-    if (!wordData) return;
-
-    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
-    const englishSearchTerm = wordData.en || '';
-
-    const modal = StudyApp.elements.sentenceModal;
-    const wordEl = modal.querySelector('#sentence-modal-word');
-    const bodyEl = modal.querySelector('#sentence-modal-body');
-
-    wordEl.textContent = japaneseSearchTerm;
-    modal.style.display = 'flex';
-
-    if (!japaneseSearchTerm || !englishSearchTerm) {
-        bodyEl.innerHTML = `<p style="color: #ffcdd2;">Cannot search for sentences. This word is missing a required Japanese or English translation.</p>`;
-        return;
-    }
-
-    // --- THIS IS THE CHANGE ---
-    // Render skeleton placeholders.
-    let skeletonHTML = '';
-    for (let i = 0; i < 3; i++) {
-        skeletonHTML += `
-            <div class="skeleton-sentence">
-                <div class="skeleton-line title"></div>
-                <div class="skeleton-line text"></div>
+    // --- THIS IS THE NEW PART ---
+    // Immediately render the skeleton layout. This replaces the "Loading..." text from study.html.
+    const renderPageSkeleton = () => {
+        const skeletonHTML = `
+            <div class="skeleton-study-grid">
+                <div class="skeleton-flashcard-box">
+                    <div class="skeleton-line title" style="width: 50%; margin: 0 auto;"></div>
+                    <div class="skeleton-flashcard-content"></div>
+                    <div class="skeleton-line button"></div>
+                </div>
+                <div class="skeleton-word-list-box">
+                    <div class="skeleton-line title" style="width: 70%; margin-bottom: 20px;"></div>
+                    <div class="skeleton-list-item"></div>
+                    <div class="skeleton-list-item"></div>
+                    <div class="skeleton-list-item"></div>
+                    <div class="skeleton-list-item"></div>
+                </div>
             </div>
         `;
-    }
-    bodyEl.innerHTML = skeletonHTML;
-    // --- END OF CHANGE ---
+        StudyApp.elements.container.innerHTML = skeletonHTML;
+    };
+    renderPageSkeleton();
+    // --- END OF NEW PART ---
 
-    try {
-        const apiUrl = `/.netlify/functions/sentences?jp_term=${encodeURIComponent(japaneseSearchTerm)}&en_term=${encodeURIComponent(englishSearchTerm)}`;
-        const response = await fetch(apiUrl);
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `Server responded with status ${response.status}`);
-        }
-        
-        const relevantSentences = await response.json();
-
-        if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
-        } else {
-            const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
-            let html = '';
-
-            relevantSentences.forEach((s, index) => {
-                const jpText = s.jp || '';
-                const bnText = s.bn || '';
-                const jpDisplay = jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`);
-                html += `
-                    <div class="sentence-entry">
-                        <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
-                        <p class="sentence-bangla">(${bnText})</p>
-                    </div>
-                `;
-            });
-            bodyEl.innerHTML = html;
-        }
-
-    } catch (error) {
-        console.error("Error fetching sentences:", error);
-        if (bodyEl) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences from the server: ${error.message}</p>`;
-        }
-    }
-}
-
-// --- All other helper functions (speakJapanese, closeModals, etc.) remain the same ---
-function speakJapanese(text) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ja-JP';
-        utterance.rate = 0.9;
-        window.speechSynthesis.speak(utterance);
-    }
-}
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-function closeSentenceModal() {
-    if (StudyApp.elements.sentenceModal) StudyApp.elements.sentenceModal.style.display = 'none';
-}
-async function showMnemonic(banglaWord) {
-    const wordData = StudyApp.data.dictionary[banglaWord];
-    if (!wordData || !wordData.en) return;
-    const modal = StudyApp.elements.mnemonicModal;
-    const modalBody = modal.querySelector('#mnemonic-modal-body');
-    modal.style.display = 'flex';
-    modalBody.innerHTML = '<p class="image-loading-text">Searching for a visual mnemonic...</p>';
-    try {
-        const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(wordData.en)}&per_page=1`, {
-            headers: { Authorization: StudyApp.config.pexelsApiKey }
-        });
-        if (!response.ok) throw new Error(`Pexels API error: ${response.statusText}`);
-        const data = await response.json();
-        let imageHtml = `<p class="image-loading-text">No image found for "${wordData.en}".</p>`;
-        if (data.photos && data.photos.length > 0) {
-            const photo = data.photos[0];
-            imageHtml = `<a href="${photo.url}" target="_blank" rel="noopener noreferrer" class="mnemonic-image-link"><img src="${photo.src.large}" alt="Visual for ${wordData.en}"></a><a href="https://www.pexels.com" target="_blank" class="pexels-credit">Photo by ${photo.photographer} on Pexels</a>`;
-        }
-        modalBody.innerHTML = `<div class="mnemonic-word-info"><div class="mnemonic-bangla">${banglaWord}</div><div class="mnemonic-japanese">${wordData.meaning}<span class="speak-icon" onclick="speakJapanese('${wordData.meaning}')">🔊</span></div></div>${imageHtml}`;
-    } catch (error) {
-        modalBody.innerHTML = `<p class="image-error-text">${error.message}</p>`;
-    }
-}
-function closeMnemonicModal() {
-    if (StudyApp.elements.mnemonicModal) StudyApp.elements.mnemonicModal.style.display = 'none';
-}
-
-
-document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const wordsParam = urlParams.get('words');
 
@@ -155,6 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         StudyApp.data.dictionary = await response.json();
         
+        // This function will automatically replace the skeleton with the real content
         renderStudyPage();
 
     } catch (e) {
@@ -227,3 +135,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         StudyApp.elements.mnemonicModal.querySelector('.modal-close').addEventListener('click', closeMnemonicModal);
     }
 });
+
+// All helper functions below are unchanged.
+
+async function showExampleSentences(banglaWord) {
+    const wordData = StudyApp.data.dictionary[banglaWord];
+    if (!wordData) return;
+    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
+    const englishSearchTerm = wordData.en || '';
+    const modal = StudyApp.elements.sentenceModal;
+    const wordEl = modal.querySelector('#sentence-modal-word');
+    const bodyEl = modal.querySelector('#sentence-modal-body');
+    wordEl.textContent = japaneseSearchTerm;
+    modal.style.display = 'flex';
+    if (!japaneseSearchTerm || !englishSearchTerm) {
+        bodyEl.innerHTML = `<p style="color: #ffcdd2;">Cannot search for sentences. This word is missing a required Japanese or English translation.</p>`;
+        return;
+    }
+    let skeletonHTML = '';
+    for (let i = 0; i < 3; i++) {
+        skeletonHTML += `<div class="skeleton-sentence"><div class="skeleton-line title"></div><div class="skeleton-line text"></div></div>`;
+    }
+    bodyEl.innerHTML = skeletonHTML;
+    try {
+        const apiUrl = `/.netlify/functions/sentences?jp_term=${encodeURIComponent(japaneseSearchTerm)}&en_term=${encodeURIComponent(englishSearchTerm)}`;
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Server responded with status ${response.status}`);
+        }
+        const relevantSentences = await response.json();
+        if (relevantSentences.length === 0) {
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
+        } else {
+            const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
+            let html = '';
+            relevantSentences.forEach((s, index) => {
+                const jpText = s.jp || '';
+                const bnText = s.bn || '';
+                const jpDisplay = jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`);
+                html += `<div class="sentence-entry"><p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p><p class="sentence-bangla">(${bnText})</p></div>`;
+            });
+            bodyEl.innerHTML = html;
+        }
+    } catch (error) {
+        console.error("Error fetching sentences:", error);
+        if (bodyEl) {
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences from the server: ${error.message}</p>`;
+        }
+    }
+}
+function speakJapanese(text) { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'ja-JP'; utterance.rate = 0.9; window.speechSynthesis.speak(utterance); } }
+function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function closeSentenceModal() { if (StudyApp.elements.sentenceModal) StudyApp.elements.sentenceModal.style.display = 'none'; }
+async function showMnemonic(banglaWord) { const wordData = StudyApp.data.dictionary[banglaWord]; if (!wordData || !wordData.en) return; const modal = StudyApp.elements.mnemonicModal; const modalBody = modal.querySelector('#mnemonic-modal-body'); modal.style.display = 'flex'; modalBody.innerHTML = '<p class="image-loading-text">Searching for a visual mnemonic...</p>'; try { const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(wordData.en)}&per_page=1`, { headers: { Authorization: StudyApp.config.pexelsApiKey } }); if (!response.ok) throw new Error(`Pexels API error: ${response.statusText}`); const data = await response.json(); let imageHtml = `<p class="image-loading-text">No image found for "${wordData.en}".</p>`; if (data.photos && data.photos.length > 0) { const photo = data.photos[0]; imageHtml = `<a href="${photo.url}" target="_blank" rel="noopener noreferrer" class="mnemonic-image-link"><img src="${photo.src.large}" alt="Visual for ${wordData.en}"></a><a href="https://www.pexels.com" target="_blank" class="pexels-credit">Photo by ${photo.photographer} on Pexels</a>`; } modalBody.innerHTML = `<div class="mnemonic-word-info"><div class="mnemonic-bangla">${banglaWord}</div><div class="mnemonic-japanese">${wordData.meaning}<span class="speak-icon" onclick="speakJapanese('${wordData.meaning}')">🔊</span></div></div>${imageHtml}`; } catch (error) { modalBody.innerHTML = `<p class="image-error-text">${error.message}</p>`; } }
+function closeMnemonicModal() { if (StudyApp.elements.mnemonicModal) StudyApp.elements.mnemonicModal.style.display = 'none'; }
