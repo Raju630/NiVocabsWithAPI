@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="icon.png">
     <title>Admin Panel - NihongoHub</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="adminstyle.css">
+    <link rel="stylesheet" href="admin.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body class="admin-page">
@@ -30,26 +28,48 @@
 
         <!-- Main Admin Content -->
         <div id="admin-content" style="display: none;">
-            <div class="nav-tabs" style="margin-bottom: 25px;">
+            <div class="nav-tabs">
                 <button class="nav-tab active" data-tab="words-panel">Word Management</button>
                 <button class="nav-tab" data-tab="sentences-panel">Sentence Management</button>
+                <button class="nav-tab" data-tab="requests-panel">Sentence Requests</button>
             </div>
 
             <!-- TAB 1: Words Panel -->
             <div id="words-panel" class="admin-panel active">
                 <div class="section-box">
-                    <h2>Add / Edit Word</h2>
-                    <form id="add-edit-form">
-                        <input type="hidden" id="edit-word-id">
+                    <h2>Add New Word</h2>
+                    <form id="add-word-form">
                         <div class="add-word-form">
-                            <div class="input-group"><label for="admin-bangla">Bangla</label><input type="text" id="admin-bangla" required></div>
-                            <div class="input-group"><label for="admin-japanese">Japanese</label><input type="text" id="admin-japanese" required></div>
-                            <div class="input-group"><label for="admin-english">English</label><input type="text" id="admin-english"></div>
-                            <div class="input-group"><label for="admin-category">Category</label><select id="admin-category"><option value="">Select Category</option><option value="Noun">Noun</option><option value="Verb">Verb</option><option value="Adjective">Adjective</option><option value="Adverb">Adverb</option><option value="Phrase">Phrase</option><option value="Particle">Particle</option><option value="Conjunction">Conjunction</option><option value="Counter">Counter</option><option value="Others">Others</option></select></div>
-                            <div class="input-group"><label for="admin-lesson">Lesson</label><input type="number" id="admin-lesson" min="1" max="25"></div>
+                            <div class="input-group"><label for="add-bangla">Bangla</label><input type="text" id="add-bangla" required></div>
+                            <div class="input-group"><label for="add-japanese">Japanese</label><input type="text" id="add-japanese" required></div>
+                            <div class="input-group"><label for="add-english">English</label><input type="text" id="add-english"></div>
+                            <div class="input-group"><label for="add-category">Category</label><select id="add-category"><option value="">Select Category</option><option value="Noun">Noun</option><option value="Verb">Verb</option><option value="Adjective">Adjective</option><option value="Adverb">Adverb</option><option value="Phrase">Phrase</option><option value="Particle">Particle</option><option value="Conjunction">Conjunction</option><option value="Counter">Counter</option><option value="Others">Others</option></select></div>
+                            <div class="input-group"><label for="add-lesson">Lesson</label><input type="number" id="add-lesson" min="1" max="25"></div>
                         </div>
-                        <div style="margin-top: 20px;"><button type="submit" class="add-button">Save Word</button><button type="button" id="clear-form-btn" class="control-button">Clear Form</button></div>
+                        <div style="margin-top: 20px;"><button type="submit" class="add-button">Add Word</button></div>
                     </form>
+                </div>
+                <!-- MODIFIED: Wrapped upload sections in a grid -->
+                <div class="upload-grid">
+                    <div class="section-box">
+                        <h2>Bulk Upload (File)</h2>
+                        <p>Upload a JSON file with a "dictionary" key.</p>
+                        <form id="bulk-upload-words-form" style="margin-top: 15px;">
+                            <div class="input-group"><label for="words-file-input">JSON File</label><input type="file" id="words-file-input" accept=".json" required></div>
+                            <button type="submit" class="add-button">Upload From File</button>
+                        </form>
+                    </div>
+                    <div class="section-box">
+                        <h2>Bulk Upload (Paste)</h2>
+                        <p>Paste JSON with a "dictionary" key.</p>
+                        <form id="bulk-paste-words-form" style="margin-top: 15px;">
+                            <div class="input-group">
+                                <label for="words-paste-input">JSON Text</label>
+                                <textarea id="words-paste-input" rows="10" placeholder='{ "dictionary": { "শব্দ": { "meaning": "...", "en": "..." } } }'></textarea>
+                            </div>
+                            <button type="submit" class="add-button">Upload Pasted Text</button>
+                        </form>
+                    </div>
                 </div>
                 <div class="section-box">
                     <h2>Database Word List</h2>
@@ -57,23 +77,12 @@
                         <div class="input-group"><label for="filter-lesson">Filter by Lesson</label><select id="filter-lesson"><option value="">All Lessons</option></select></div>
                         <div class="input-group"><label for="filter-category">Filter by Category</label><select id="filter-category"><option value="">All Categories</option><option value="Noun">Noun</option><option value="Verb">Verb</option><option value="Adjective">Adjective</option><option value="Adverb">Adverb</option><option value="Phrase">Phrase</option><option value="Particle">Particle</option><option value="Conjunction">Conjunction</option><option value="Counter">Counter</option><option value="Others">Others</option></select></div>
                     </div>
-                    <button id="bulk-delete-words-btn" class="control-button" style="background-color:#c9302c; display:none; margin-bottom: 15px;">Delete Selected</button>
-                    <p id="admin-loading-words">Loading words from database...</p>
-                    <div class="table-container" style="overflow-x: auto;">
-                        <table id="words-table" style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="border-bottom: 1px solid var(--glass-border);">
-                                    <th style="padding: 10px; width: 40px;"><input type="checkbox" id="select-all-words"></th>
-                                    <th style="padding: 10px; text-align: left;">Bangla</th>
-                                    <th style="padding: 10px; text-align: left;">Japanese</th>
-                                    <!-- MODIFIED: Added English column header -->
-                                    <th style="padding: 10px; text-align: left;">English</th>
-                                    <th style="padding: 10px; text-align: left;">Lesson</th>
-                                    <th style="padding: 10px; text-align: left;">Category</th>
-                                    <th style="padding: 10px; text-align: left;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="words-table-body"></tbody>
+                    <button id="bulk-delete-words-btn" class="control-button" style="display:none; margin-bottom: 15px;">Delete Selected</button>
+                    <p id="admin-loading-words">Loading words...</p>
+                    <div class="table-container">
+                        <table id="words-table">
+                           <thead><tr><th><input type="checkbox" id="select-all-words"></th><th>Bangla</th><th>Japanese</th><th>English</th><th>Lesson</th><th>Category</th><th>Actions</th></tr></thead>
+                           <tbody id="words-table-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -82,24 +91,61 @@
             <!-- TAB 2: Sentences Panel -->
             <div id="sentences-panel" class="admin-panel" style="display: none;">
                  <div class="section-box">
-                    <h2>Add / Edit Sentence</h2>
+                    <h2>Add New Sentence</h2>
                     <form id="add-sentence-form">
-                        <input type="hidden" id="edit-sentence-id">
-                        <div class="input-group"><label for="sentence-jp">Japanese Sentence</label><input type="text" id="sentence-jp" required></div>
-                        <div class="input-group"><label for="sentence-en">English Translation</label><input type="text" id="sentence-en" required></div>
-                        <div class="input-group"><label for="sentence-bn">Bangla Translation</label><input type="text" id="sentence-bn"></div>
-                        <button type="submit" class="add-button">Save Sentence</button>
-                        <button type="button" id="clear-sentence-form-btn" class="control-button">Clear Form</button>
+                        <div class="input-group"><label for="add-sentence-jp">Japanese</label><input type="text" id="add-sentence-jp" required></div>
+                        <div class="input-group"><label for="add-sentence-en">English</label><input type="text" id="add-sentence-en" required></div>
+                        <div class="input-group"><label for="add-sentence-bn">Bangla</label><input type="text" id="add-sentence-bn"></div>
+                        <button type="submit" class="add-button">Add Sentence</button>
                     </form>
+                </div>
+                <!-- MODIFIED: Wrapped upload sections in a grid -->
+                <div class="upload-grid">
+                    <div class="section-box">
+                        <h2>Bulk Upload (File)</h2>
+                        <p>Upload a JSON file with an "exampleSentences" array.</p>
+                        <form id="bulk-upload-sentences-form" style="margin-top: 15px;">
+                            <div class="input-group"><label for="sentences-file-input">JSON File</label><input type="file" id="sentences-file-input" accept=".json" required></div>
+                            <button type="submit" class="add-button">Upload From File</button>
+                        </form>
+                    </div>
+                    <div class="section-box">
+                        <h2>Bulk Upload (Paste)</h2>
+                        <p>Paste an array of sentence objects.</p>
+                        <form id="bulk-paste-sentences-form" style="margin-top: 15px;">
+                            <div class="input-group">
+                                <label for="sentences-paste-input">JSON Text</label>
+                                <textarea id="sentences-paste-input" rows="10" placeholder='[
+  { "jp": "...", "en": "...", "bn": "..." }
+]'></textarea>
+                            </div>
+                            <button type="submit" class="add-button">Upload Pasted Text</button>
+                        </form>
+                    </div>
                 </div>
                 <div class="section-box">
                     <h2>All Sentences in Database</h2>
-                    <button id="bulk-delete-sentences-btn" class="control-button" style="background-color:#c9302c; display:none; margin-bottom: 15px;">Delete Selected</button>
+                    <button id="bulk-delete-sentences-btn" class="control-button" style="display:none; margin-bottom: 15px;">Delete Selected</button>
                     <p id="admin-loading-sentences">Loading sentences...</p>
-                     <div class="table-container" style="overflow-x: auto;">
-                        <table id="sentences-table" style="width: 100%; border-collapse: collapse;">
-                            <thead><tr style="border-bottom: 1px solid var(--glass-border);"><th style="padding: 10px; width: 40px;"><input type="checkbox" id="select-all-sentences"></th><th style="padding: 10px; text-align: left;">Japanese</th><th style="padding: 10px; text-align: left;">English</th><th style="padding: 10px; text-align: left;">Bangla</th><th style="padding: 10px; text-align: left;">Actions</th></tr></thead>
+                     <div class="table-container">
+                        <table id="sentences-table">
+                            <thead><tr><th><input type="checkbox" id="select-all-sentences"></th><th>Japanese</th><th>English</th><th>Bangla</th><th>Actions</th></tr></thead>
                             <tbody id="sentences-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TAB 3: Requests Panel -->
+            <div id="requests-panel" class="admin-panel" style="display: none;">
+                <div class="section-box">
+                    <h2>Pending Sentence Requests</h2>
+                    <p>Users have requested example sentences for these words.</p>
+                    <p id="admin-loading-requests" style="margin-top: 15px;">Loading requests...</p>
+                    <div class="table-container" style="margin-top: 15px;">
+                        <table id="requests-table">
+                            <thead><tr><th>Japanese</th><th>English</th><th>Bangla</th><th>Date</th><th>Actions</th></tr></thead>
+                            <tbody id="requests-table-body"></tbody>
                         </table>
                     </div>
                 </div>

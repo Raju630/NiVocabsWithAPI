@@ -351,14 +351,22 @@ function getWordPool() {
 
 // Find this function in your dictionary.js file and replace it.
 
+// This is the complete, final version of the function.
+// Replace the existing showExampleSentences function in BOTH dictionary.js and study-session.js with this one.
+
 async function showExampleSentences(banglaWord) {
-    const wordData = getWordData(banglaWord);
+    // Determine the correct data source based on which script is running
+    const isStudySession = typeof StudyApp !== 'undefined';
+    const wordData = isStudySession ? StudyApp.data.dictionary[banglaWord] : getWordData(banglaWord);
+
     if (!wordData) return;
 
-    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|~/g, '').trim();
+    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
     const englishSearchTerm = wordData.en || '';
 
-    const modal = App.elements.sentenceModal;
+    // Find the sentence modal in the main document
+    const modal = document.getElementById('sentence-modal');
+    if (!modal) return;
     const wordEl = modal.querySelector('#sentence-modal-word');
     const bodyEl = modal.querySelector('#sentence-modal-body');
 
@@ -369,9 +377,34 @@ async function showExampleSentences(banglaWord) {
         bodyEl.innerHTML = `<p style="color: #ffcdd2;">Cannot search for sentences. This word is missing a required Japanese or English translation.</p>`;
         return;
     }
-    
-    // --- THIS IS THE CHANGE ---
-    // Instead of a simple text, render 3 skeleton sentence placeholders.
+
+    // Helper function to handle the request submission
+    const submitSentenceRequest = async (fullWordObject) => {
+        const btn = document.getElementById('request-sentence-btn');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+        try {
+            const response = await fetch('/.netlify/functions/request-sentence', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(fullWordObject) // Send the full object
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Failed to submit request.');
+            }
+            btn.textContent = 'Request Submitted! ✔️';
+            btn.style.backgroundColor = '#5cb85c';
+        } catch (error) {
+            btn.textContent = 'Submission Failed ❌';
+            btn.style.backgroundColor = '#d9534f';
+            console.error('Sentence Request Error:', error);
+            alert(`Error: ${error.message}`);
+        }
+    };
+
+    // Render skeleton loaders for a better UX
     let skeletonHTML = '';
     for (let i = 0; i < 3; i++) {
         skeletonHTML += `
@@ -382,7 +415,6 @@ async function showExampleSentences(banglaWord) {
         `;
     }
     bodyEl.innerHTML = skeletonHTML;
-    // --- END OF CHANGE ---
 
     try {
         const apiUrl = `/.netlify/functions/sentences?jp_term=${encodeURIComponent(japaneseSearchTerm)}&en_term=${encodeURIComponent(englishSearchTerm)}`;
@@ -395,8 +427,24 @@ async function showExampleSentences(banglaWord) {
         const relevantSentences = await response.json();
 
         if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No matching example sentences found for "${japaneseSearchTerm}".</p>`;
+            // Display the request button if no sentences are found
+            bodyEl.innerHTML = `
+                <p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>
+                <p style="margin-top: 15px; color: #ccc;">Want to see examples for this word? Let us know!</p>
+                <button id="request-sentence-btn" class="add-button" style="margin-top: 10px;">Request Example Sentence</button>
+            `;
+            // Attach the event listener to the new button
+            document.getElementById('request-sentence-btn').addEventListener('click', () => {
+                // We need to construct the word object to send
+                const wordObjectForRequest = {
+                    bangla: banglaWord,
+                    japanese: wordData.meaning,
+                    english: wordData.en
+                };
+                submitSentenceRequest(wordObjectForRequest);
+            });
         } else {
+            // If sentences are found, render them
             const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
             let html = '';
             relevantSentences.forEach((s, index) => {
@@ -410,7 +458,6 @@ async function showExampleSentences(banglaWord) {
                     </div>
                 `;
             });
-            // This line will automatically replace the skeletons with the real content
             bodyEl.innerHTML = html;
         }
     } catch (error) {

@@ -138,25 +138,71 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // All helper functions below are unchanged.
 
+// This is the complete, final version of the function.
+// Replace the existing showExampleSentences function in BOTH dictionary.js and study-session.js with this one.
+
 async function showExampleSentences(banglaWord) {
-    const wordData = StudyApp.data.dictionary[banglaWord];
+    // Determine the correct data source based on which script is running
+    const isStudySession = typeof StudyApp !== 'undefined';
+    const wordData = isStudySession ? StudyApp.data.dictionary[banglaWord] : getWordData(banglaWord);
+
     if (!wordData) return;
-    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|~/g, '').trim();
+
+    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
     const englishSearchTerm = wordData.en || '';
-    const modal = StudyApp.elements.sentenceModal;
+
+    // Find the sentence modal in the main document
+    const modal = document.getElementById('sentence-modal');
+    if (!modal) return;
     const wordEl = modal.querySelector('#sentence-modal-word');
     const bodyEl = modal.querySelector('#sentence-modal-body');
+
     wordEl.textContent = japaneseSearchTerm;
     modal.style.display = 'flex';
+
     if (!japaneseSearchTerm || !englishSearchTerm) {
         bodyEl.innerHTML = `<p style="color: #ffcdd2;">Cannot search for sentences. This word is missing a required Japanese or English translation.</p>`;
         return;
     }
+
+    // Helper function to handle the request submission
+    const submitSentenceRequest = async (fullWordObject) => {
+        const btn = document.getElementById('request-sentence-btn');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+        try {
+            const response = await fetch('/.netlify/functions/request-sentence', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(fullWordObject) // Send the full object
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Failed to submit request.');
+            }
+            btn.textContent = 'Request Submitted! ✔️';
+            btn.style.backgroundColor = '#5cb85c';
+        } catch (error) {
+            btn.textContent = 'Submission Failed ❌';
+            btn.style.backgroundColor = '#d9534f';
+            console.error('Sentence Request Error:', error);
+            alert(`Error: ${error.message}`);
+        }
+    };
+
+    // Render skeleton loaders for a better UX
     let skeletonHTML = '';
     for (let i = 0; i < 3; i++) {
-        skeletonHTML += `<div class="skeleton-sentence"><div class="skeleton-line title"></div><div class="skeleton-line text"></div></div>`;
+        skeletonHTML += `
+            <div class="skeleton-sentence">
+                <div class="skeleton-line title"></div>
+                <div class="skeleton-line text"></div>
+            </div>
+        `;
     }
     bodyEl.innerHTML = skeletonHTML;
+
     try {
         const apiUrl = `/.netlify/functions/sentences?jp_term=${encodeURIComponent(japaneseSearchTerm)}&en_term=${encodeURIComponent(englishSearchTerm)}`;
         const response = await fetch(apiUrl);
@@ -164,24 +210,47 @@ async function showExampleSentences(banglaWord) {
             const errorData = await response.json();
             throw new Error(errorData.error || `Server responded with status ${response.status}`);
         }
+        
         const relevantSentences = await response.json();
+
         if (relevantSentences.length === 0) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
+            // Display the request button if no sentences are found
+            bodyEl.innerHTML = `
+                <p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>
+                <p style="margin-top: 15px; color: #ccc;">Want to see examples for this word? Let us know!</p>
+                <button id="request-sentence-btn" class="add-button" style="margin-top: 10px;">Request Example Sentence</button>
+            `;
+            // Attach the event listener to the new button
+            document.getElementById('request-sentence-btn').addEventListener('click', () => {
+                // We need to construct the word object to send
+                const wordObjectForRequest = {
+                    bangla: banglaWord,
+                    japanese: wordData.meaning,
+                    english: wordData.en
+                };
+                submitSentenceRequest(wordObjectForRequest);
+            });
         } else {
+            // If sentences are found, render them
             const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
             let html = '';
             relevantSentences.forEach((s, index) => {
                 const jpText = s.jp || '';
                 const bnText = s.bn || '';
                 const jpDisplay = jpText.replace(highlightRegex, (match) => `<strong>${match}</strong>`);
-                html += `<div class="sentence-entry"><p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p><p class="sentence-bangla">(${bnText})</p></div>`;
+                html += `
+                    <div class="sentence-entry">
+                        <p class="sentence-japanese">${index + 1}. ${jpDisplay} <span class="speak-icon" onclick="speakJapanese('${jpText.replace(/'/g, "\\'")}')">🔊</span></p>
+                        <p class="sentence-bangla">(${bnText})</p>
+                    </div>
+                `;
             });
             bodyEl.innerHTML = html;
         }
     } catch (error) {
         console.error("Error fetching sentences:", error);
         if (bodyEl) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences from the server: ${error.message}</p>`;
+            bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences: ${error.message}</p>`;
         }
     }
 }

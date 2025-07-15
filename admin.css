@@ -1,0 +1,125 @@
+/* --- admin.css --- */
+
+/* --- Global Styles & Variables --- */
+:root {
+    --primary-color: #1c3d7d;
+    --secondary-color: #fbd7c0;
+    --text-color: #e0e0e0;
+    --text-color-dark: #333;
+    --background-image: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    --glass-bg: rgba(30, 40, 60, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-shadow: rgba(0, 0, 0, 0.2);
+    --success-color: #5cb85c;
+    --danger-color: #d9534f;
+    --border-radius: 8px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body.admin-page {
+    font-family: 'Roboto', 'Noto Sans JP', sans-serif;
+    background-image: var(--background-image);
+    background-attachment: fixed;
+    color: var(--text-color);
+    padding-top: 65px;
+}
+
+a { text-decoration: none; color: var(--primary-color); font-weight: 700; }
+a:hover { color: var(--secondary-color); }
+
+h1, h2, h3, h4 { color: #ffffff; text-shadow: 0 1px 3px var(--glass-shadow); }
+h2 { font-size: 1.8em; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
+
+.container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+
+/* --- Header --- */
+header {
+    background: rgba(30, 40, 60, 0.6);
+    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--glass-border);
+    position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+}
+nav { display: flex; justify-content: space-between; align-items: center; padding: 0 25px; height: 65px; max-width: 1280px; margin: 0 auto; }
+nav .logo a { font-size: 1.6em; color: #fff; }
+nav .nav-links { list-style: none; }
+nav .nav-links li a { color: var(--text-color); padding: 8px 16px; border-radius: var(--border-radius); transition: background-color 0.3s, color 0.3s; }
+nav .nav-links li a:hover { background-color: var(--primary-color); color: white; }
+
+/* --- Glassmorphism Section Box --- */
+.section-box {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    padding: 25px; border-radius: var(--border-radius);
+    margin-bottom: 25px; border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 20px var(--glass-shadow);
+}
+
+/* --- Tabs Styling --- */
+.nav-tabs { display: flex; gap: 5px; border-bottom: 1px solid var(--glass-border); margin-bottom: 25px; flex-wrap: wrap;}
+.nav-tab { padding: 12px 22px; border: none; background-color: transparent; cursor: pointer; font-size: 16px; color: var(--text-color); border-bottom: 3px solid transparent; transition: color 0.3s, border-color 0.3s; }
+.nav-tab:hover { color: #fff; }
+.nav-tab.active { color: #a7c5ff; border-bottom-color: var(--primary-color); font-weight: 700; }
+.admin-panel { display: none; }
+.admin-panel.active { display: block; }
+
+/* --- Form & Input Styling --- */
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9em; color: #ccc; }
+input[type="text"], input[type="number"], input[type="password"], select, textarea {
+    width: 100%; padding: 12px 15px; border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius); font-size: 16px;
+    background-color: rgba(0,0,0,0.2); color: var(--text-color);
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(28, 61, 125, 0.5); }
+input[type="file"] { background: transparent; border: 1px dashed var(--glass-border); padding: 10px; }
+input[type="file"]::-webkit-file-upload-button { background: var(--primary-color); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+.add-word-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; align-items: end; }
+textarea { font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; resize: vertical; }
+
+/* --- Button Styling --- */
+.add-button, .control-button { padding: 12px 20px; background-color: var(--primary-color); color: white; border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 16px; font-weight: 700; transition: background-color 0.3s, transform 0.2s; margin-right: 10px; }
+.add-button:hover, .control-button:hover { background-color: #2e5099; transform: translateY(-2px); }
+.delete-btn, #bulk-delete-words-btn, #bulk-delete-sentences-btn { background-color: var(--danger-color) !important; }
+.delete-btn:hover, #bulk-delete-words-btn:hover, #bulk-delete-sentences-btn:hover { background-color: #c9302c !important; }
+.resolve-request-btn, .save-edit-btn { background-color: var(--success-color) !important; }
+.resolve-request-btn { padding: 8px 12px; font-size: 14px; }
+.resolve-request-btn:hover, .save-edit-btn:hover { background-color: #4cae4c !important; }
+.edit-btn, .cancel-edit-btn { padding: 8px 12px; font-size: 14px; }
+.cancel-edit-btn { background-color: #555; }
+.cancel-edit-btn:hover { background-color: #777; }
+
+/* --- Table Styling --- */
+.table-container { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--glass-border); vertical-align: middle; }
+thead th { background-color: rgba(0, 0,0, 0.2); font-weight: 700; color: #a7c5ff; }
+tbody tr { transition: background-color 0.2s; }
+tbody tr:hover { background-color: var(--glass-bg); }
+td { font-size: 0.95em; }
+td .inline-edit-input, td .inline-edit-select { width: 100%; padding: 8px; font-size: 1em; background-color: rgba(0, 0, 0, 0.3); border: 1px solid var(--primary-color); color: var(--text-color); border-radius: 4px; }
+td.actions-cell { display: flex; gap: 8px; white-space: nowrap; }
+input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+
+/* --- NEW: Grid for Upload Sections --- */
+.upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+}
+
+/* --- Responsive Media Queries --- */
+@media (max-width: 992px) {
+    .upload-grid {
+        grid-template-columns: 1fr; /* Stack on smaller screens */
+    }
+}
+@media (max-width: 768px) {
+    .nav-tabs { flex-wrap: wrap; }
+    .nav-tab { font-size: 14px; padding: 10px 15px; }
+    .admin-filters { flex-direction: column; gap: 15px; }
+    th, td { padding: 8px 10px; font-size: 0.85em; }
+    .add-button, .control-button, .edit-btn, .cancel-edit-btn { padding: 8px 12px; font-size: 14px; }
+    .actions-cell { flex-wrap: wrap; }
+}
