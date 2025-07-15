@@ -1,8 +1,4 @@
-// seed.js (With Full Index Creation)
-
-// This script is for one-time use to populate your MongoDB database.
-// It reads from your local full_data.json and uploads it.
-// It also creates essential indexes for fast queries.
+// seed.js (SAFE VERSION - With optional re-seeding)
 
 import { MongoClient } from 'mongodb';
 import fs from 'fs/promises';
@@ -14,10 +10,12 @@ dotenv.config();
 
 // --- Main Seeder Function ---
 async function seedDatabase() {
+  // Check for the --reseed flag to determine if we should wipe data
+  const shouldReseed = process.argv.includes('--reseed');
+
   const uri = process.env.MONGODB_URI;
   if (!uri) {
-    console.error("Error: MONGODB_URI not found in .env file.");
-    console.error("Please ensure you have a .env file with your MongoDB connection string.");
+    console.error("❌ Error: MONGODB_URI not found in .env file.");
     return;
   }
 
@@ -28,55 +26,82 @@ async function seedDatabase() {
     await client.connect();
     console.log("✅ Successfully connected to MongoDB Atlas!");
 
-    // 2. Define your database and collections
     const db = client.db("n5_dictionary_db");
     const wordsCollection = db.collection("words");
     const sentencesCollection = db.collection("sentences");
 
-    // 3. Clear existing data to prevent duplicates on re-seeding
-    // UNCOMMENT these lines only if you want to WIPE and RE-SEED your database.
-    // For just adding indexes, keep them commented out.
-    // await wordsCollection.deleteMany({});
-    // await sentencesCollection.deleteMany({});
-    // console.log("🧹 Cleared existing collections.");
+    // --- SAFETY CHECK ---
+    // Only proceed with data deletion and insertion if the --reseed flag is present
+    if (shouldReseed) {
+      console.log("\n⚠️ --reseed flag detected. Wiping and re-seeding all data...");
 
-    // 4. Read your local full_data.json file (optional, if re-seeding)
-    // const dataPath = path.join(process.cwd(), 'data', 'full_data.json');
-    // const fileContent = await fs.readFile(dataPath, 'utf8');
-    // const data = JSON.parse(fileContent);
-    // const dictionary = data.dictionary;
-    // const exampleSentences = data.exampleSentences;
+      // 2. Clear existing data to prevent duplicates
+      await wordsCollection.deleteMany({});
+      await sentencesCollection.deleteMany({});
+      console.log("   - Cleared existing 'words' and 'sentences' collections.");
 
-    // 5. Prepare data for insertion (optional, if re-seeding)
-    // const wordsToInsert = Object.keys(dictionary).map(banglaWord => ({ /* ... */ }));
-    // const sentencesToInsert = exampleSentences;
+      // 3. Read your local full_data.json file
+      const dataPath = path.join(process.cwd(), 'data', 'full_data.json');
+      const fileContent = await fs.readFile(dataPath, 'utf8');
+      const data = JSON.parse(fileContent);
 
-    // 6. Insert data (optional, if re-seeding)
-    // if (wordsToInsert.length > 0) { /* ... */ }
-    // if (sentencesToInsert.length > 0) { /* ... */ }
+      if (!data.dictionary || !data.exampleSentences) {
+        throw new Error("'dictionary' or 'exampleSentences' not found in full_data.json");
+      }
 
-    // --- 7. CREATE INDEXES (This is the most important part) ---
-    console.log("🚀 Creating search indexes... (This may take a moment)");
+      // 4. Prepare the data for insertion
+      const wordsToInsert = Object.keys(data.dictionary).map(banglaWord => ({
+        bangla: banglaWord,
+        japanese: data.dictionary[banglaWord].meaning,
+        english: data.dictionary[banglaWord].en,
+        category: data.dictionary[banglaWord].category,
+        lesson: data.dictionary[banglaWord].lesson
+      }));
 
-    // Index for the 'words' collection
-    console.log("   - Creating indexes for 'words' collection...");
-    await wordsCollection.createIndex({ lesson: 1, category: 1 }); // For filtering in admin panel
-    await wordsCollection.createIndex({ bangla: "text", japanese: "text", english: "text" }); // For main search bar
-    console.log("   ✔ 'words' indexes created.");
+      const sentencesToInsert = data.exampleSentences;
 
-    // Index for the 'sentences' collection
-    console.log("   - Creating indexes for 'sentences' collection...");
-    await sentencesCollection.createIndex({ jp: 1 }); // For sorting in admin panel and main site search
-    console.log("   ✔ 'sentences' indexes created.");
+      // 5. Insert the data into the collections
+      if (wordsToInsert.length > 0) {
+        const wordsResult = await wordsCollection.insertMany(wordsToInsert);
+        console.log(`   - Successfully seeded ${wordsResult.insertedCount} words.`);
+      }
 
-    console.log("✅ All indexes created successfully.");
+      if (sentencesToInsert.length > 0) {
+        const sentencesResult = await sentencesCollection.insertMany(sentencesToInsert);
+        console.log(`   - Successfully seeded ${sentencesResult.insertedCount} sentences.`);
+      }
+      console.log("✅ Data re-seeding complete.");
+    } else {
+      console.log("\nℹ️ Running in 'indexes-only' mode. No data will be deleted or inserted.");
+      console.log("   To wipe and re-seed all data, run with the --reseed flag: node seed.js --reseed");
+    }
+
+    // --- 6. CREATE/UPDATE INDEXES (This runs every time for safety) ---
+    console.log("\n🚀 Ensuring all database indexes are up to date...");
+
+    // Indexes for the 'words' collection
+    await wordsCollection.createIndex({ lesson: 1, category: 1 }, { name: "lesson_category_filter_idx" });
+    await wordsCollection.createIndex({ bangla: "text", japanese: "text", english: "text" }, { name: "word_search_text_idx" });
+    console.log("   - Indexes for 'words' collection verified.");
+
+    // Indexes for the 'sentences' collection
+    await sentencesCollection.createIndex({ jp: 1 }, { name: "sentence_sort_jp_idx" });
+    await sentencesCollection.createIndex({ jp: "text", en: "text" }, { name: "sentence_search_text_idx" });
+    console.log("   - Indexes for 'sentences' collection verified.");
+
+    console.log("✅ All indexes are created and up to date.");
 
   } catch (err) {
-    console.error("❌ An error occurred during the process:", err);
+    if (err.code === 'ENOENT') {
+        console.error(`\n❌ Error: Seeder could not find file at '${err.path}'.`);
+        console.error("   Please make sure 'full_data.json' exists inside the 'data' directory.");
+    } else {
+        console.error("\n❌ An error occurred during the process:", err);
+    }
   } finally {
-    // 8. Close the connection to the database
+    // 7. Close the connection to the database
     await client.close();
-    console.log("👋 Database connection closed.");
+    console.log("\n👋 Database connection closed.");
   }
 }
 
