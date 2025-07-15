@@ -1,0 +1,32 @@
+.container {
+    max-width: 100vw;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.control-button {
+
+    padding: 8px 20px;
+    margin: 4px 4px;
+   
+}
+.add-button{
+    padding: 8px 20px;
+    margin: 4px 4px;
+}
+tr {
+    margin:10px 10px;
+}
+@media (max-width: 768px) {
+    .control-button {
+
+    padding: 12px 20px;
+   
+    }
+    .nav-tabs{
+        margin-top: 70px;
+    }
+    .add-button{
+        margin-right: 12px;
+    }
+}

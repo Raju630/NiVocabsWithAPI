@@ -5,40 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - NihongoHub</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="adminstyle.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body class="admin-page">
     <header>
         <nav>
-            <div class="logo">
-                <a href="/">Admin - N5 日本語辞書</a>
-            </div>
-            <div class="nav-links-container">
-                <ul class="nav-links">
-                    <li><a href="/">← Back to Main Site</a></li>
-                </ul>
-            </div>
+            <div class="logo"><a href="/">Admin - N5 日本語辞書</a></div>
+            <div class="nav-links-container"><ul class="nav-links"><li><a href="/">← Back to Main Site</a></li></ul></div>
         </nav>
     </header>
 
     <main class="container">
-        <!-- 1. Login Section -->
+        <!-- Login Section -->
         <div id="login-section" class="section-box">
             <h2>Admin Login</h2>
             <form id="login-form">
-                <div class="input-group">
-                    <label for="admin-password">Password</label>
-                    <input type="password" id="admin-password" required>
-                </div>
+                <div class="input-group"><label for="admin-password">Password</label><input type="password" id="admin-password" required></div>
                 <button type="submit" class="add-button">Login</button>
                 <p id="login-error" style="color: #ff8a80; margin-top: 15px;"></p>
             </form>
         </div>
 
-        <!-- 2. Main Admin Content (Wrapper for tabs) -->
+        <!-- Main Admin Content -->
         <div id="admin-content" style="display: none;">
-            <!-- NEW: Admin Tabs -->
-            <div class="nav-tabs" style="margin-bottom: 25px;margin-bottom: 70px;">
+            <div class="nav-tabs" style="margin-bottom: 25px;">
                 <button class="nav-tab active" data-tab="words-panel">Word Management</button>
                 <button class="nav-tab" data-tab="sentences-panel">Sentence Management</button>
             </div>
@@ -65,10 +56,22 @@
                         <div class="input-group"><label for="filter-lesson">Filter by Lesson</label><select id="filter-lesson"><option value="">All Lessons</option></select></div>
                         <div class="input-group"><label for="filter-category">Filter by Category</label><select id="filter-category"><option value="">All Categories</option><option value="Noun">Noun</option><option value="Verb">Verb</option><option value="Adjective">Adjective</option><option value="Adverb">Adverb</option><option value="Phrase">Phrase</option><option value="Particle">Particle</option><option value="Conjunction">Conjunction</option><option value="Counter">Counter</option><option value="Others">Others</option></select></div>
                     </div>
+                    <button id="bulk-delete-words-btn" class="control-button" style="background-color:#c9302c; display:none; margin-bottom: 15px;">Delete Selected</button>
                     <p id="admin-loading-words">Loading words from database...</p>
                     <div class="table-container" style="overflow-x: auto;">
                         <table id="words-table" style="width: 100%; border-collapse: collapse;">
-                            <thead><tr style="border-bottom: 1px solid var(--glass-border);"><th style="padding: 10px; text-align: left;">Bangla</th><th style="padding: 10px; text-align: left;">Japanese</th><th style="padding: 10px; text-align: left;">Lesson</th><th style="padding: 10px; text-align: left;">Category</th><th style="padding: 10px; text-align: left;">Actions</th></tr></thead>
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--glass-border);">
+                                    <th style="padding: 10px; width: 40px;"><input type="checkbox" id="select-all-words"></th>
+                                    <th style="padding: 10px; text-align: left;">Bangla</th>
+                                    <th style="padding: 10px; text-align: left;">Japanese</th>
+                                    <!-- MODIFIED: Added English column header -->
+                                    <th style="padding: 10px; text-align: left;">English</th>
+                                    <th style="padding: 10px; text-align: left;">Lesson</th>
+                                    <th style="padding: 10px; text-align: left;">Category</th>
+                                    <th style="padding: 10px; text-align: left;">Actions</th>
+                                </tr>
+                            </thead>
                             <tbody id="words-table-body"></tbody>
                         </table>
                     </div>
@@ -78,20 +81,23 @@
             <!-- TAB 2: Sentences Panel -->
             <div id="sentences-panel" class="admin-panel" style="display: none;">
                  <div class="section-box">
-                    <h2>Add New Sentence</h2>
+                    <h2>Add / Edit Sentence</h2>
                     <form id="add-sentence-form">
+                        <input type="hidden" id="edit-sentence-id">
                         <div class="input-group"><label for="sentence-jp">Japanese Sentence</label><input type="text" id="sentence-jp" required></div>
                         <div class="input-group"><label for="sentence-en">English Translation</label><input type="text" id="sentence-en" required></div>
                         <div class="input-group"><label for="sentence-bn">Bangla Translation</label><input type="text" id="sentence-bn"></div>
-                        <button type="submit" class="add-button">Add Sentence</button>
+                        <button type="submit" class="add-button">Save Sentence</button>
+                        <button type="button" id="clear-sentence-form-btn" class="control-button">Clear Form</button>
                     </form>
                 </div>
                 <div class="section-box">
                     <h2>All Sentences in Database</h2>
+                    <button id="bulk-delete-sentences-btn" class="control-button" style="background-color:#c9302c; display:none; margin-bottom: 15px;">Delete Selected</button>
                     <p id="admin-loading-sentences">Loading sentences...</p>
                      <div class="table-container" style="overflow-x: auto;">
                         <table id="sentences-table" style="width: 100%; border-collapse: collapse;">
-                            <thead><tr style="border-bottom: 1px solid var(--glass-border);"><th style="padding: 10px; text-align: left;">Japanese</th><th style="padding: 10px; text-align: left;">English</th><th style="padding: 10px; text-align: left;">Bangla</th><th style="padding: 10px; text-align: left;">Actions</th></tr></thead>
+                            <thead><tr style="border-bottom: 1px solid var(--glass-border);"><th style="padding: 10px; width: 40px;"><input type="checkbox" id="select-all-sentences"></th><th style="padding: 10px; text-align: left;">Japanese</th><th style="padding: 10px; text-align: left;">English</th><th style="padding: 10px; text-align: left;">Bangla</th><th style="padding: 10px; text-align: left;">Actions</th></tr></thead>
                             <tbody id="sentences-table-body"></tbody>
                         </table>
                     </div>
