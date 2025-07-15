@@ -355,7 +355,7 @@ async function showExampleSentences(banglaWord) {
     const wordData = getWordData(banglaWord);
     if (!wordData) return;
 
-    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
+    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|~/g, '').trim();
     const englishSearchTerm = wordData.en || '';
 
     const modal = App.elements.sentenceModal;

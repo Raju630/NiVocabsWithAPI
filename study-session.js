@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function showExampleSentences(banglaWord) {
     const wordData = StudyApp.data.dictionary[banglaWord];
     if (!wordData) return;
-    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
+    const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|~/g, '').trim();
     const englishSearchTerm = wordData.en || '';
     const modal = StudyApp.elements.sentenceModal;
     const wordEl = modal.querySelector('#sentence-modal-word');
