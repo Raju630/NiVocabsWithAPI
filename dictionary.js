@@ -1,17 +1,9 @@
-// dictionary.js (VERSION 13 - LOCAL STORAGE FOR USER WORDS)
-
-// --- 1. UPDATED GLOBAL STATE & HYBRID DATA MODEL ---
 const App = {
     data: {
-        // Holds the read-only dictionary fetched from the server
         serverDictionary: {}, 
-        // Holds all words added or edited by the user. Persists in localStorage.
         userWords: {},
-        // Holds a list of Bangla words the user has deleted. Persists in localStorage.
         deletedWords: [],
-        // The final, merged dictionary that the UI will render.
         liveDictionary: {},
-        // --- Other data remains the same ---
         weakWords: [],
         manifestETag: null,
         manifestLastModified: null
@@ -22,7 +14,7 @@ const App = {
         mainPracticeList: [],
         weakPracticeList: [],
         pexelsApiKey: '0YZ1YqOAGmfXwoIBl7elGumGGMYqwrOJgwqyqstQuMEGtyPJjiFFNr3K',
-        currentQuiz: { /* ... */ },
+        currentQuiz: { },
         quizScore: 0,
         studyList: [],
         isSelectionMode: false,
@@ -38,67 +30,49 @@ const App = {
     },
 };
 
-// --- 2. NEW LOCAL STORAGE MANAGEMENT FUNCTIONS ---
-
-// Loads user's custom words and deletions from localStorage
 function loadUserData() {
     const userDataJSON = localStorage.getItem('N5_USER_DATA');
     if (userDataJSON) {
         const userData = JSON.parse(userDataJSON);
         App.data.userWords = userData.userWords || {};
         App.data.deletedWords = userData.deletedWords || [];
-        App.data.weakWords = userData.weakWords || []; // Also load weak words
+        App.data.weakWords = userData.weakWords || [];
     }
 }
 
-// Saves user's custom words and deletions to localStorage
 function saveUserData() {
     const userData = {
         userWords: App.data.userWords,
         deletedWords: App.data.deletedWords,
-        weakWords: App.data.weakWords // Also save weak words
+        weakWords: App.data.weakWords
     };
     localStorage.setItem('N5_USER_DATA', JSON.stringify(userData));
 }
 
-// --- 3. NEW CORE LOGIC FOR HYBRID DICTIONARY ---
-
-// Merges server dictionary with user data to create the 'live' dictionary for rendering
 function updateLiveDictionary() {
-    // Start with a fresh copy of the server data
     const combined = { ...App.data.serverDictionary };
-    
-    // Overwrite with any user-edited or user-added words
     Object.assign(combined, App.data.userWords);
-
-    // Remove any words the user has deleted
     App.data.deletedWords.forEach(word => {
         delete combined[word];
     });
-
     App.data.liveDictionary = combined;
 }
 
-// --- 4. MODIFIED INITIALIZATION AND DATA FETCHING ---
 document.addEventListener('DOMContentLoaded', () => {
-    loadUserData(); // Load user's custom data first
-
+    loadUserData();
     const urlParams = new URLSearchParams(window.location.search);
     App.config.lessonId = urlParams.get('id');
-
     renderApp();
-    fetchAndRenderWords(); // This will now fetch server data and merge it
+    fetchAndRenderWords();
 });
-// NEW function to render skeleton placeholders
 function renderSkeletons(container) {
-    container.innerHTML = ''; // Clear any previous content like "Loading..."
+    container.innerHTML = '';
     const skeletonHTML = `
         <div class="skeleton-card">
             <div class="skeleton-line title"></div>
             <div class="skeleton-line text"></div>
         </div>
     `;
-    // Render 12 skeletons to fill the screen on most devices
     for (let i = 0; i < 12; i++) {
         container.innerHTML += skeletonHTML;
     }
@@ -107,85 +81,57 @@ function renderSkeletons(container) {
 async function fetchAndRenderWords(searchTerm = '') {
     const container = document.getElementById('word-list-container');
     if (!container) return;
-    
-    // THIS IS THE NEW LINE:
-    renderSkeletons(container); // Show skeletons immediately.
-
-    // The rest of the function remains the same.
-    // The old "Loading..." text is no longer needed.
-    
+    renderSkeletons(container);
     let apiUrl = '/.netlify/functions/words';
-
     const isSearching = searchTerm.length > 0;
-
     if (isSearching) {
         apiUrl += `?search=${encodeURIComponent(searchTerm)}`;
     } else if (App.config.lessonId) {
         apiUrl += `?lesson=${App.config.lessonId}`;
     }
-
     try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
             const errorBody = await response.json();
             throw new Error(`API request failed: ${errorBody.error || response.statusText}`);
         }
-        
         App.data.serverDictionary = await response.json();
         updateLiveDictionary();
-
         const wordKeys = Object.keys(App.data.liveDictionary).sort();
-        
-        // This line will automatically remove the skeletons when the real data is ready
-        container.innerHTML = ''; 
-
+        container.innerHTML = '';
         if (wordKeys.length === 0) {
             container.innerHTML = '<p style="text-align:center; color:#888;">No words found.</p>';
             return;
         }
-
-        // The rest of the logic for batch rendering...
         App.config.allWordsForView = wordKeys;
         App.config.currentPage = 0;
         renderNextBatch();
         window.addEventListener('scroll', handleInfiniteScroll);
-
     } catch (error) {
         console.error("Failed to fetch words:", error);
         container.innerHTML = `<p style="text-align:center; color:#ff8a80;">Error: Could not load dictionary data. ${error.message}</p>`;
     }
 }
 
-// This function now implicitly uses the combined data via App.config.allWordsForView
 function renderNextBatch() {
     const container = document.getElementById('word-list-container');
     if (!container) return;
-
     const { allWordsForView, currentPage, renderBatchSize } = App.config;
-    
     const startIndex = currentPage * renderBatchSize;
     const endIndex = startIndex + renderBatchSize;
-
     const batchToRender = allWordsForView.slice(startIndex, endIndex);
-
     if (batchToRender.length === 0 && currentPage === 0) {
         container.innerHTML = '<p style="text-align:center; color:#888;">No words found.</p>';
         return;
     }
-
     batchToRender.forEach(word => {
-        // Use liveDictionary to get the data for the card
         if (App.data.liveDictionary[word]) {
             container.appendChild(createWordCard(word));
         }
     });
-
     App.config.currentPage++;
 }
 
-// --- 5. UPDATED CRUD (Create, Read, Update, Delete) FUNCTIONS ---
-
-// Gets a word from the live dictionary
 function getWordData(word) {
     return App.data.liveDictionary[word];
 }
@@ -194,14 +140,10 @@ function createWordCard(word) {
     const card = document.createElement('div');
     card.className = 'word-card';
     card.dataset.word = word;
-    // Use the getWordData helper to ensure we have the correct (user or server) version
     const { meaning, category, lesson, en, isUserWord } = getWordData(word);
-    
-    // Add a visual indicator for user-added words
     if (isUserWord) {
         card.classList.add('user-added');
     }
-
     card.innerHTML = `
         <div class="word-card-header">
             <div class="word-card-bangla">${word} ${isUserWord ? '<span title="You added this word">👤</span>' : ''}</div>
@@ -227,60 +169,42 @@ function createWordCard(word) {
 function addWord() {
     const word = document.getElementById('word-input').value.trim();
     const meaning = document.getElementById('meaning-input').value.trim();
-    const en = document.getElementById('en-input').value.trim(); // Get English meaning
+    const en = document.getElementById('en-input').value.trim();
     const category = document.getElementById('category-select').value;
-    
     if (word && meaning) {
         if (App.data.liveDictionary[word] && !confirm(`The word "${word}" already exists. Do you want to overwrite it?`)) {
             return;
         }
-
         const lessonNumber = App.config.lessonId ? parseInt(App.config.lessonId, 10) : 0;
-        
-        // Add the new word to the user's personal dictionary
         App.data.userWords[word] = { 
             meaning, 
             category,
-            en, // Add English meaning to the new word object
+            en,
             lesson: lessonNumber,
-            isUserWord: true, // A flag to identify user-added words
+            isUserWord: true,
             dateAdded: new Date().toISOString()
         }; 
-        
-        // If the word was previously deleted, "undelete" it
         App.data.deletedWords = App.data.deletedWords.filter(d => d !== word);
-        
-        saveUserData(); // Persist to localStorage
-        updateLiveDictionary(); // Re-merge all data sources
-        fetchAndRenderWords(); // Re-render the entire view to show the new word
-        
+        saveUserData();
+        updateLiveDictionary();
+        fetchAndRenderWords();
         document.getElementById('word-input').value = '';
         document.getElementById('meaning-input').value = '';
-        document.getElementById('en-input').value = ''; // Clear the new input
+        document.getElementById('en-input').value = '';
         document.getElementById('category-select').value = '';
     }
 }
 
-// MODIFIED to add to deletedWords list
 function deleteWord(word) {
-    
-    // 1. Update data models
     if (!App.data.deletedWords.includes(word)) {
         App.data.deletedWords.push(word);
     }
     delete App.data.userWords[word];
-    // Remove from weak words list if present
     App.data.weakWords = App.data.weakWords.filter(w => w !== word);
-
-    // 2. Save the permanent user changes (which now includes weak words)
     saveUserData();
-    
-    // 3. Update the live in-memory dictionary
     updateLiveDictionary();
-
-    // 4. Re-render BOTH UI components that might show this word
-    fetchAndRenderWords(); // This refreshes the main dictionary tab
-    renderWeakWordsList(); // *** THIS IS THE FIX: Explicitly refresh the weak words tab view ***
+    fetchAndRenderWords();
+    renderWeakWordsList();
 }
 
 function saveEditedWord() {
@@ -288,39 +212,27 @@ function saveEditedWord() {
     const originalWord = modal.querySelector('#edit-original-word').value;
     const newWord = modal.querySelector('#edit-word-input').value.trim();
     const newMeaning = modal.querySelector('#edit-meaning-input').value.trim();
-    const newEn = modal.querySelector('#edit-en-input').value.trim(); // Get English meaning
+    const newEn = modal.querySelector('#edit-en-input').value.trim();
     const newCategory = modal.querySelector('#edit-category-select').value;
-
     if (newWord && newMeaning) {
-        // Get the original data, whether it's from server or user
         const originalData = getWordData(originalWord) || {};
-
-        // Create the new data object, preserving fields like 'lesson'
         const newWordData = { 
             ...originalData, 
             meaning: newMeaning, 
             category: newCategory,
-            en: newEn, // Add English meaning to the saved object
-            isUserWord: true // Any edited word is now considered a "user word"
+            en: newEn,
+            isUserWord: true
         };
-        
-        // If the Bangla word itself was changed, we need to handle the key change
         if (originalWord !== newWord) {
-            delete App.data.userWords[originalWord]; // Remove old entry if it exists
-            // If the old word was a server word, we must add it to the deleted list
+            delete App.data.userWords[originalWord];
             if (App.data.serverDictionary[originalWord]) {
                 if (!App.data.deletedWords.includes(originalWord)) {
                     App.data.deletedWords.push(originalWord);
                 }
             }
         }
-
-        // Save the updated word to the user's dictionary
         App.data.userWords[newWord] = newWordData;
-        
-        // If the new word was previously deleted, "undelete" it
         App.data.deletedWords = App.data.deletedWords.filter(d => d !== newWord);
-        
         saveUserData();
         updateLiveDictionary();
         fetchAndRenderWords();
@@ -328,20 +240,14 @@ function saveEditedWord() {
     }
 }
 
-// MODIFIED to reset user data as well
 function resetApplication() {
     if (confirm("Are you sure you want to delete ALL data? This includes all your personal additions and weak words. This action cannot be undone.")) {
-        localStorage.removeItem('N5_USER_DATA'); // Only need to remove this one key now
+        localStorage.removeItem('N5_USER_DATA');
         alert("Application has been reset. The page will now reload.");
         location.reload();
     }
 }
 
-
-// --- All other functions (quiz, sentences, etc.) should work as before ---
-// --- They will use the 'liveDictionary' via helper functions ---
-
-// Example of a function that needs to use the live dictionary
 function getWordPool() {
     const allWords = App.data.liveDictionary ? Object.keys(App.data.liveDictionary) : [];
     return App.config.lessonId
@@ -349,36 +255,22 @@ function getWordPool() {
         : allWords;
 }
 
-// Find this function in your dictionary.js file and replace it.
-
-// This is the complete, final version of the function.
-// Replace the existing showExampleSentences function in BOTH dictionary.js and study-session.js with this one.
-
 async function showExampleSentences(banglaWord) {
-    // Determine the correct data source based on which script is running
     const isStudySession = typeof StudyApp !== 'undefined';
     const wordData = isStudySession ? StudyApp.data.dictionary[banglaWord] : getWordData(banglaWord);
-
     if (!wordData) return;
-
     const japaneseSearchTerm = (wordData.meaning || '').replace(/\[.*?\]|～|、/g, '').trim();
     const englishSearchTerm = wordData.en || '';
-
-    // Find the sentence modal in the main document
     const modal = document.getElementById('sentence-modal');
     if (!modal) return;
     const wordEl = modal.querySelector('#sentence-modal-word');
     const bodyEl = modal.querySelector('#sentence-modal-body');
-
     wordEl.textContent = japaneseSearchTerm;
     modal.style.display = 'flex';
-
     if (!japaneseSearchTerm || !englishSearchTerm) {
         bodyEl.innerHTML = `<p style="color: #ffcdd2;">Cannot search for sentences. This word is missing a required Japanese or English translation.</p>`;
         return;
     }
-
-    // Helper function to handle the request submission
     const submitSentenceRequest = async (fullWordObject) => {
         const btn = document.getElementById('request-sentence-btn');
         if (!btn) return;
@@ -388,7 +280,7 @@ async function showExampleSentences(banglaWord) {
             const response = await fetch('/.netlify/functions/request-sentence', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(fullWordObject) // Send the full object
+                body: JSON.stringify(fullWordObject)
             });
             if (!response.ok) {
                 const errData = await response.json();
@@ -403,8 +295,6 @@ async function showExampleSentences(banglaWord) {
             alert(`Error: ${error.message}`);
         }
     };
-
-    // Render skeleton loaders for a better UX
     let skeletonHTML = '';
     for (let i = 0; i < 3; i++) {
         skeletonHTML += `
@@ -415,7 +305,6 @@ async function showExampleSentences(banglaWord) {
         `;
     }
     bodyEl.innerHTML = skeletonHTML;
-
     try {
         const apiUrl = `/.netlify/functions/sentences?jp_term=${encodeURIComponent(japaneseSearchTerm)}&en_term=${encodeURIComponent(englishSearchTerm)}`;
         const response = await fetch(apiUrl);
@@ -423,19 +312,14 @@ async function showExampleSentences(banglaWord) {
             const errorData = await response.json();
             throw new Error(errorData.error || `Server responded with status ${response.status}`);
         }
-        
         const relevantSentences = await response.json();
-
         if (relevantSentences.length === 0) {
-            // Display the request button if no sentences are found
             bodyEl.innerHTML = `
                 <p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>
                 <p style="margin-top: 15px; color: #ccc;">Want to see examples for this word? Let us know!</p>
                 <button id="request-sentence-btn" class="add-button" style="margin-top: 10px;">Request Example Sentence</button>
             `;
-            // Attach the event listener to the new button
             document.getElementById('request-sentence-btn').addEventListener('click', () => {
-                // We need to construct the word object to send
                 const wordObjectForRequest = {
                     bangla: banglaWord,
                     japanese: wordData.meaning,
@@ -444,7 +328,6 @@ async function showExampleSentences(banglaWord) {
                 submitSentenceRequest(wordObjectForRequest);
             });
         } else {
-            // If sentences are found, render them
             const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
             let html = '';
             relevantSentences.forEach((s, index) => {
@@ -468,9 +351,6 @@ async function showExampleSentences(banglaWord) {
     }
 }
 
-
-// NO CHANGES NEEDED FOR THE REST OF THE FILE FROM HERE...
-// (All the other functions like renderApp, modals, quiz, etc. are included for completeness)
 function debounce(func, delay = 250) {
     let timeoutId;
     return function(...args) {
@@ -506,12 +386,10 @@ function renderApp() {
         <div id="quiz-tab" class="tab-content"></div>
         <div id="settings-tab" class="tab-content"></div>
     `;
-    
     renderDictionaryTab();
     renderWeakWordsTab();
     renderQuizTab();
     renderSettingsTab();
-    
     attachAppEventListeners();
 }
 function updateHeader() {
@@ -527,7 +405,6 @@ function updateHeader() {
 }
 function renderDictionaryTab() {
     const container = document.getElementById('dictionary-tab');
-    // NEW LAYOUT for the "Add New Word" form
     container.innerHTML = `
         <div class="section-box">
             <h3 style="text-align:center;">Random Word Practice</h3>
@@ -537,19 +414,15 @@ function renderDictionaryTab() {
             <h3>Add New Word</h3>
             <div class="add-word-form">
                 <div class="input-group">
-                    
                     <input type="text" id="word-input" placeholder="Bangla Word">
                 </div>
                 <div class="input-group">
-                
                     <input type="text" id="meaning-input" placeholder="Japanese Meaning">
                 </div>
                 <div class="input-group">
-                    
                     <input type="text" id="en-input" placeholder="English Meaning">
                 </div>
                 <div class="input-group">
-                    
                     <select id="category-select">
                         <option value="">Category</option>
                         <option value="Noun">Noun</option>
@@ -567,7 +440,6 @@ function renderDictionaryTab() {
                     <button id="add-word-btn" class="add-button">Add</button>
                 </div>
             </div>
-            
         </div>
         <div class="section-box" id="word-list-section">
             <div class="study-list-controls"><button id="toggle-select-mode-btn" class="control-button">Select for Study</button><div id="selection-actions" style="display: none;"><button id="start-study-btn" class="add-button">Start Practice (<span id="selected-count">0</span>)</button><button id="clear-selection-btn" class="control-button">Clear</button></div></div>
@@ -599,11 +471,9 @@ function handleWordCardClick(e) {
     const target = e.target;
     const card = target.closest('.word-card');
     if (!card) return;
-
     const word = card.dataset.word;
     const actionButton = target.closest('.card-action-btn');
     const speakIcon = target.closest('.speak-icon');
-
     if (actionButton) {
         e.stopPropagation();
         if (actionButton.classList.contains('examples')) showExampleSentences(word);
@@ -636,9 +506,7 @@ function toggleSelectionMode() {
     const wordListSection = document.getElementById('word-list-section');
     const toggleBtn = document.getElementById('toggle-select-mode-btn');
     const selectionActions = document.getElementById('selection-actions');
-    
     wordListSection.classList.toggle('selection-mode', App.config.isSelectionMode);
-    
     if (App.config.isSelectionMode) {
         toggleBtn.textContent = 'Cancel';
         selectionActions.style.display = 'flex';
@@ -714,7 +582,6 @@ background: linear-gradient(90deg, rgba(227, 255, 231, 1) 0%, rgba(217, 231, 255
             </div>
             <div id="quiz-results-container" style="display:none; text-align: left;"></div>
         </div>`;
-    
     document.querySelector('button[data-quiz-type="bangla-to-jp"]').addEventListener('click', () => startQuiz('bangla-to-jp'));
     document.querySelector('button[data-quiz-type="jp-to-bangla"]').addEventListener('click', () => startQuiz('jp-to-bangla'));
 }
@@ -736,39 +603,27 @@ function renderSettingsTab() {
     document.getElementById('import-file').addEventListener('change', importData);
     document.getElementById('reset-btn').addEventListener('click', resetApplication);
 }
-// This is the only function that needs to be replaced.
 
 function attachAppEventListeners() {
     App.elements.appContainer.querySelector('.nav-tabs').addEventListener('click', (e) => {
         if (e.target.matches('.nav-tab')) {
             const tabName = e.target.dataset.tab;
-
-            // --- THIS IS THE FIX ---
-            // If we are navigating AWAY from the dictionary tab, remove the listener
-            // to prevent it from firing unnecessarily on other tabs.
             if (tabName !== 'dictionary') {
                 window.removeEventListener('scroll', handleInfiniteScroll);
             } else {
-                // If we are navigating TO the dictionary tab, re-attach the listener.
                 window.addEventListener('scroll', handleInfiniteScroll);
             }
-            // --- END OF FIX ---
-
-            // The rest of the tab switching logic remains the same
             if (App.config.currentQuiz.type && tabName !== 'quiz') {
                 App.config.quizScore = 0;
                 App.config.currentQuiz = {};
-                renderQuizTab(); // Re-render to reset the quiz view
+                renderQuizTab();
             }
-            
             App.elements.appContainer.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             App.elements.appContainer.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             App.elements.appContainer.querySelector(`#${tabName}-tab`).classList.add('active');
             e.target.classList.add('active');
         }
     });
-
-    // Other modal listeners remain the same
     App.elements.modal.querySelector('.modal-close').addEventListener('click', () => App.elements.modal.style.display = 'none');
     App.elements.modal.querySelector('#save-edit-btn').addEventListener('click', saveEditedWord);
     App.elements.sentenceModal.querySelector('.modal-close').addEventListener('click', () => App.elements.sentenceModal.style.display = 'none');
@@ -785,7 +640,6 @@ function renderWeakWordsList() {
     if (!container) return;
     container.innerHTML = '';
     document.getElementById('weak-words-count-title').textContent = `Weak Words (${App.data.weakWords.length})`;
-
     if (App.data.weakWords.length === 0) {
         container.innerHTML = '<p style="text-align:center; color:#888;">Your weak words list is empty.</p>';
         return;
@@ -848,7 +702,7 @@ function toggleRandomMeaning() {
         btn.textContent = 'Show Word';
         if (!App.data.weakWords.includes(word)) {
             App.data.weakWords.push(word);
-            saveUserData(); // Use centralized save function
+            saveUserData();
             renderWeakWordsList();
         }
     } else {
@@ -939,7 +793,7 @@ function checkAnswer(element) {
         App.config.currentQuiz.wrongAnswers.push(currentQuestion.word);
         if (!App.data.weakWords.includes(currentQuestion.word)) {
             App.data.weakWords.push(currentQuestion.word);
-            saveUserData(); // Use centralized save function
+            saveUserData();
             renderWeakWordsList();
         }
     }
@@ -974,7 +828,7 @@ function openEditModal(word) {
     modal.querySelector('#edit-original-word').value = word;
     modal.querySelector('#edit-word-input').value = word;
     modal.querySelector('#edit-meaning-input').value = meaning;
-    modal.querySelector('#edit-en-input').value = en || ''; // Populate English input
+    modal.querySelector('#edit-en-input').value = en || '';
     modal.querySelector('#edit-category-select').value = category || '';
     modal.style.display = 'flex';
 }
