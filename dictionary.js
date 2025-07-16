@@ -822,16 +822,37 @@ function endQuiz() {
         renderQuizTab();
     });
 }
+// ... (all other functions are unchanged)
+
 function openEditModal(word) {
-    const { meaning, category, en } = getWordData(word);
+    const wordData = getWordData(word);
+    if (!wordData) return;
+
+    const { meaning, category, en } = wordData;
     const modal = App.elements.modal;
+
+    // --- THIS IS THE FIX ---
+    // A helper function to convert a string to PascalCase (e.g., "noun" -> "Noun")
+    const toPascalCase = (str) => {
+        if (!str || typeof str !== 'string') return '';
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    };
+
+    const formattedCategory = toPascalCase(category);
+    // --- END OF FIX ---
+
     modal.querySelector('#edit-original-word').value = word;
     modal.querySelector('#edit-word-input').value = word;
     modal.querySelector('#edit-meaning-input').value = meaning;
     modal.querySelector('#edit-en-input').value = en || '';
-    modal.querySelector('#edit-category-select').value = category || '';
+    
+    // Now we use the correctly formatted category name
+    modal.querySelector('#edit-category-select').value = formattedCategory;
+    
     modal.style.display = 'flex';
 }
+
+// ... (the rest of the file is unchanged)
 function closeEditModal() {
     App.elements.modal.style.display = 'none';
 }

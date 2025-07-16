@@ -58,7 +58,9 @@ export default async function handler(request) {
 
                 let query = {};
                 if (lesson) query.lesson = parseInt(lesson, 10);
-                if (category) query.category = category;
+                if (category) {
+                    query.category = { $regex: `^${category}$`, $options: 'i' };
+                }
 
                 const total = await collection.countDocuments(query);
                 const words = await collection.find(query).sort({ bangla: 1 }).skip(skip).limit(limit).toArray();
