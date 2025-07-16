@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dropdownContainer = document.querySelector('.dropdown-container');
     const lessonsDropdownMenu = document.getElementById('lessonsDropdown');
 
-    // --- Populate Dropdown Menu from config.js ---
+    //Populate Dropdown Menu from config.js
     function populateDropdown() {
         if (!lessonsDropdownMenu) return;
         lessonsDropdownMenu.innerHTML = '';
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Dropdown Toggle Functionality ---
+    //Dropdown Toggle Functionality
     if (dropdownToggle && dropdownContainer) {
         dropdownToggle.addEventListener('click', (e) => {
             e.preventDefault();
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (scrollToTopBtn) {
         // Show or hide the button based on scroll position
         window.addEventListener('scroll', () => {
-            if (window.pageYOffset > 200) { // Show button after scrolling 200px
+            if (window.pageYOffset > 500) { // Show button after scrolling 200px
                 scrollToTopBtn.classList.add('visible');
             } else {
                 scrollToTopBtn.classList.remove('visible');
