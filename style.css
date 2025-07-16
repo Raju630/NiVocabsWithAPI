@@ -2,6 +2,7 @@
 :root {
     --primary-color: #1c3d7d; /* Lighter blue for better contrast on dark bg */
     --secondary-color: #fbd7c0; /* Bright yellow/orange accent */
+    --accent-teal: #2dd4bf; 
     --text-color: #e0e0e0;
     --text-color-dark: #333;
     --background-image: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -25,7 +26,7 @@ body {
 }
 
 a { text-decoration: none; color: var(--primary-color); font-weight: 700; }
-a:hover { color: var(--secondary-color); }
+a:hover { color: var(--accent-teal); }
 
 h1, h2, h3 { color: #ffffff; text-shadow: 0 1px 3px var(--glass-shadow); }
 
@@ -586,13 +587,13 @@ nav {
 }
 .profile-title h2 {
     font-size: 1.1em;
-    color: wheat;
+    color: var(--text-color);
     font-weight: 400;
 }
 
 .profile-body h3 {
     font-size: 1.6em;
-    color: var(--secondary-color);
+    color: var(--accent-teal);
     margin-top: 30px;
     margin-bottom: 15px;
     border-bottom: none; /* Remove the underline from the default h3 style */
@@ -622,10 +623,7 @@ nav {
     text-decoration: none;
     transition: all 0.3s ease;
 }
-.facebook-btn {
-    background: white;
-    color: #1877F2;
-}
+
 
 .facebook-btn:hover {
     background: transparent;
@@ -1261,3 +1259,100 @@ footer {
 .edit-select{
     background-color: rgb(30, 40, 60);
 }
+
+/* --- NEW: Enhanced Developer Page Styles --- */
+
+.profile-body h3 {
+    font-size: 1.6em;
+    color: white; /* Use accent color for headlines */
+    margin-top: 40px; /* More space between sections */
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.profile-body ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.profile-body ul li {
+    background: rgba(0,0,0,0.15);
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-radius: var(--border-radius);
+    border-left: 3px solid var(--primary-color);
+}
+
+.tech-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.tech-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9em;
+    color: #ccc;
+}
+
+.tech-icon img {
+    width: 48px;  /* Slightly larger for better visuals */
+    height: 48px;
+    object-fit: contain; /* Ensures images scale correctly */
+    transition: transform 0.3s ease;
+}
+
+.tech-icon:hover img {
+    transform: scale(1.1);
+}
+
+
+/* Fade-in animation for sections */
+.fade-in-section {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.fade-in-section.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tech-icon .github-logo { fill: #e0e0e0; } /* Keep GitHub button icon neutral */
+
+
+/* NEW: Unified Social Button Styles */
+.social-links { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+.social-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 25px;
+    border-radius: var(--border-radius);
+    color: white;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+.social-button svg { width: 24px; height: 24px; fill: currentColor; }
+
+/* Specific styles for each button */
+.github-btn { background-color: #333; border-color: #444; }
+.github-btn:hover { background-color: #444; transform: translateY(-2px); }
+
+.facebook-btn { background-color: transparent; border-color: #1877F2; }
+.facebook-btn:hover { color: #166fe5; transform: translateY(-2px); }
+
+
+/* Fade-in animation */
+.fade-in-section { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
+.fade-in-section.is-visible { opacity: 1; transform: translateY(0); }

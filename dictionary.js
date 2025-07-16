@@ -562,7 +562,7 @@ function renderQuizTab() {
                 <p>Select a quiz mode to begin.</p>
                 <div class="quiz-setup" style="margin: 25px 0; display:flex; justify-content:center; align-items:center; gap: 20px;">
                     <label for="quiz-length-select">Questions:</label>
-                    <select id="quiz-length-select" style="width: 100px; background-color: rgb(46, 85, 137);">
+                    <select id="quiz-length-select" style="width: 100px; background-color: rgba(0, 0, 0, 0.2);">
                         <option value="10">10</option>
                         <option value="20">20</option>
                         <option value="50">50</option>

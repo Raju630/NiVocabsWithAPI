@@ -12,20 +12,15 @@
 <body class="developer-page">
     <header>
         <nav>
-            <div class="logo">
-                <a href="/">N5 日本語辞書</a>
-            </div>
+            <div class="logo"><a href="/">N5 日本語辞書</a></div>
             <div class="nav-menu-button" id="nav-menu-toggle">☰</div>
             <div class="nav-links-container">
                 <ul class="nav-links">
                     <li><a href="/">Home</a></li>
                     <li class="dropdown-container">
                         <a href="#" class="dropdown-toggle">Lessons <span class="arrow">▾</span></a>
-                        <div class="dropdown-menu" id="lessonsDropdown">
-                            <!-- Populated by script.js -->
-                        </div>
+                        <div class="dropdown-menu" id="lessonsDropdown"></div>
                     </li>
-                    <!-- Add the new "Contact" link here -->
                     <li><a href="developer.html" class="active">Contact</a></li>
                 </ul>
             </div>
@@ -35,7 +30,7 @@
     <main>
         <div class="container">
             <div class="profile-card section-box">
-                <div class="profile-header">
+                <div class="profile-header fade-in-section">
                     <img src="raju.png" alt="Developer's Picture" class="profile-picture">
                     <div class="profile-title">
                         <h1>Raju Sheikh</h1>
@@ -44,28 +39,63 @@
                 </div>
 
                 <div class="profile-body">
-                    <h3>About Me</h3>
-                    <p>
-                        Hello! My name is Raju, and I am the creator of this Japanese Learner's Hub. As a fellow student of the Japanese language, I know how challenging it can be to memorize vocabulary. I built this tool to help myself and other learners from the Bangla-speaking community to practice and master the N5 words in an interactive and efficient way.
-                    </p>
-                    <p>
-                        My goal was to create a clean, modern, and useful application that you can personalize with your own word lists and study at your own pace. I hope you find it helpful on your journey to learning Japanese!
-                    </p>
+                    <section class="fade-in-section">
+                        <h3>About Me</h3>
+                        <p>Hello! I'm Raju, the creator of this Japanese Learner's Hub. As a fellow student of the Japanese language, I know the challenge of memorizing vocabulary. I built this tool to help myself and others in the Bangla-speaking community master N5 words in an interactive and efficient way.</p>
+                        <p>My goal was to create a clean, modern, and useful application that you can personalize. I hope you find it helpful on your journey to learning Japanese!</p>
+                    </section>
 
-                    <h3>Connect with Me</h3>
-                    <p>
-                        I would love to hear your feedback or suggestions for new features. You can connect with me on Facebook.
-                    </p>
-                    <!-- REPLACE the old social-links div with this new one -->
-                    <div class="social-links">
-                        <a href="https://www.facebook.com/profile.php?id=100005197486240" target="_blank" class="social-button facebook-btn">
-                            <!-- Facebook SVG Logo -->
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
-                            </svg>
-                            <span>Connect on Facebook</span>
-                        </a>
-                    </div>
+                    <section class="fade-in-section">
+                        <h3>Project Features</h3>
+                        <ul>
+                            <li><strong>Dynamic Dictionary:</strong> Fetches all word and sentence data from a MongoDB database via serverless functions.</li>
+                            <li><strong>Offline-First:</strong> Core application data is cached locally, allowing for offline access and practice.</li>
+                            <li><strong>Personalization:</strong> Users can add, edit, and delete their own words, which are saved in their browser's local storage.</li>
+                            <li><strong>Interactive Admin Panel:</strong> A secure, feature-rich dashboard to manage the entire database, including bulk uploads and inline editing.</li>
+                            <li><strong>User Feedback Loop:</strong> Users can request missing example sentences, creating a direct channel for improving the dataset.</li>
+                        </ul>
+                    </section>
+
+                    <section class="fade-in-section">
+                        <h3>Technology Stack</h3>
+                        <!-- MODIFIED: Replaced SVGs with your IMG files -->
+                        <div class="tech-stack">
+                            <div class="tech-icon">
+                                <img src="html.png" alt="HTML5 Logo">
+                                <span>HTML5</span>
+                            </div>
+                            <div class="tech-icon">
+                                <img src="css.png" alt="CSS3 Logo">
+                                <span>CSS3</span>
+                            </div>
+                            <div class="tech-icon">
+                                <img src="js.png" alt="JavaScript Logo">
+                                <span>JavaScript</span>
+                            </div>
+                             <div class="tech-icon">
+                                <img src="netlify.png" alt="Netlify Logo">
+                                <span>Netlify</span>
+                            </div>
+                            <div class="tech-icon">
+                                <img src="mongodb.png" alt="MongoDB Logo">
+                                <span>MongoDB</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="fade-in-section">
+                        <h3>Connect with Me</h3>
+                        <p>I would love to hear your feedback or suggestions. You can connect with me on Facebook or check out the project's source code on GitHub.</p>
+                        <div class="social-links">
+                            <a href="https://github.com/Raju630/MongoDic" target="_blank" class="social-button github-btn">
+                                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>GitHub</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                                <span>View on GitHub</span>
+                            </a>
+                            <a href="https://www.facebook.com/profile.php?id=100005197486240" target="_blank" class="social-button facebook-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                                <span>Connect on Facebook</span>
+                            </a>
+                        </div>
                 </div>
             </div>
         </div>
@@ -75,7 +105,6 @@
         <p>© 2025 Japanese Learner's Hub By Raju. Happy Learning!</p>
     </footer>
 
-    <!-- Only the main script.js is needed here for the nav dropdown -->
     <script src="/config.js" defer></script>
     <script src="/script.js" defer></script>
 </body>

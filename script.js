@@ -1,12 +1,15 @@
-// script.js
+// script.js (Corrected with a single DOMContentLoaded listener)
+
 document.addEventListener('DOMContentLoaded', () => {
+
+    // --- 1. DROPDOWN & NAV MENU LOGIC ---
     const dropdownToggle = document.querySelector('.dropdown-toggle');
     const dropdownContainer = document.querySelector('.dropdown-container');
     const lessonsDropdownMenu = document.getElementById('lessonsDropdown');
 
-    //Populate Dropdown Menu from config.js
+    // Populate Dropdown Menu from config.js
     function populateDropdown() {
-        if (!lessonsDropdownMenu) return;
+        if (!lessonsDropdownMenu || typeof AppConfig === 'undefined') return;
         lessonsDropdownMenu.innerHTML = '';
         AppConfig.lessons.forEach(lesson => {
             const link = document.createElement('a');
@@ -16,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    //Dropdown Toggle Functionality
+    // Dropdown Toggle Functionality
     if (dropdownToggle && dropdownContainer) {
         dropdownToggle.addEventListener('click', (e) => {
             e.preventDefault();
@@ -29,6 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Nav Menu (Hamburger) Toggle
     const menuToggle = document.getElementById('nav-menu-toggle');
     const navLinksContainer = document.querySelector('.nav-links-container');
     if (menuToggle && navLinksContainer) {
@@ -36,42 +41,57 @@ document.addEventListener('DOMContentLoaded', () => {
             navLinksContainer.classList.toggle('active');
         });
     }
-    
-    // ===============================================
-    // === NEW SCROLL-TO-TOP FEATURE LOGIC ===========
-    // ===============================================
-    const scrollToTopBtn = document.getElementById('scroll-to-top');
 
+    // --- 2. SCROLL-TO-TOP FEATURE LOGIC ---
+    const scrollToTopBtn = document.getElementById('scroll-to-top');
     if (scrollToTopBtn) {
-        // Show or hide the button based on scroll position
         window.addEventListener('scroll', () => {
-            if (window.pageYOffset > 500) { // Show button after scrolling 200px
+            if (window.pageYOffset > 500) {
                 scrollToTopBtn.classList.add('visible');
             } else {
                 scrollToTopBtn.classList.remove('visible');
             }
         });
 
-        // Handle the click event to scroll to the top
         scrollToTopBtn.addEventListener('click', () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth' // For a smooth scrolling animation
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    // --- 3. SERVICE WORKER REGISTRATION ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(error => {
+                console.log('ServiceWorker registration failed: ', error);
             });
         });
     }
-    // === END OF NEW FEATURE ========================
-    // At the end of script.js
-    if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-        .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-        })
-        .catch(error => {
-            console.log('ServiceWorker registration failed: ', error);
+
+    // --- 4. FADE-IN ANIMATION LOGIC ---
+    const faders = document.querySelectorAll('.fade-in-section');
+    if (faders.length > 0) {
+        const appearOnScroll = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) {
+                    return;
+                }
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            });
+        }, {
+            threshold: 0.2 // Trigger when 20% of the element is visible
         });
-    });
+
+        faders.forEach(fader => {
+            appearOnScroll.observe(fader);
+        });
     }
+
+    // --- 5. INITIALIZE DROPDOWN ---
+    // This is called last to make sure AppConfig is loaded
     populateDropdown();
 });
