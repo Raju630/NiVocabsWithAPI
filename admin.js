@@ -134,7 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
             row.querySelector('td[data-field="japanese"]').innerHTML = `<input type="text" class="inline-edit-input word-japanese-input" value="${word.japanese}">`;
             row.querySelector('td[data-field="english"]').innerHTML = `<input type="text" class="inline-edit-input word-english-input" value="${word.english || ''}">`;
             row.querySelector('td[data-field="lesson"]').innerHTML = `<input type="number" class="inline-edit-input word-lesson-input" value="${word.lesson || ''}">`;
-            row.querySelector('td[data-field="category"]').innerHTML = `<select class="inline-edit-select word-category-input"><option value="">None</option><option value="Noun" ${word.category === 'Noun' ? 'selected' : ''}>Noun</option><option value="Verb" ${word.category === 'Verb' ? 'selected' : ''}>Verb</option><option value="Adjective" ${word.category === 'Adjective' ? 'selected' : ''}>Adjective</option><option value="Adverb" ${word.category === 'Adverb' ? 'selected' : ''}>Adverb</option><option value="Phrase" ${word.category === 'Phrase' ? 'selected' : ''}>Phrase</option><option value="Particle" ${word.category === 'Particle' ? 'selected' : ''}>Particle</option><option value="Conjunction" ${word.category === 'Conjunction' ? 'selected' : ''}>Conjunction</option><option value="Counter" ${word.category === 'Counter' ? 'selected' : ''}>Counter</option><option value="Others" ${word.category === 'Others' ? 'selected' : ''}>Others</option></select>`;
+            const currentCategory = (word.category || '').toLowerCase(); // Make comparison case-insensitive
+            const categories = ["Noun", "Verb", "Adjective", "Adverb", "Phrase", "Particle", "Conjunction", "Counter", "Others"];
+            const optionsHTML = categories.map(cat => 
+                `<option value="${cat}" ${currentCategory === cat.toLowerCase() ? 'selected' : ''}>${cat}</option>`
+            ).join('');
+            row.querySelector('td[data-field="category"]').innerHTML = `<select class="inline-edit-select word-category-input"><option value="">None</option>${optionsHTML}</select>`;
             row.querySelector('.actions-cell').innerHTML = `<button class="control-button save-edit-btn">Save</button><button class="control-button cancel-edit-btn">Cancel</button>`;
         } else {
             const word = wordsState.data.find(w => w._id === row.dataset.id);
