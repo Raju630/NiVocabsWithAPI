@@ -86,7 +86,7 @@ async function seedDatabase() {
 
     // Indexes for the 'sentences' collection
     await sentencesCollection.createIndex({ jp: 1 }, { name: "sentence_sort_jp_idx" });
-    await sentencesCollection.createIndex({ jp: "text", en: "text" }, { name: "sentence_search_text_idx" });
+    await sentencesCollection.createIndex({ jp: "text", en: "text", bn: "text" }, { name: "sentence_search_text_idx" });
     console.log("   - Indexes for 'sentences' collection verified.");
 
     console.log("✅ All indexes are created and up to date.");

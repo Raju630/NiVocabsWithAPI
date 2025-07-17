@@ -75,6 +75,9 @@
                 <div class="section-box">
                     <h2>Database Word List</h2>
                     <div class="admin-filters" style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div class="input-group"><label for="search-words-input">Search Words</label><input type="search" id="search-words-input" placeholder="Search Bangla, Japanese, or English..."></div>
+                        <!--<label for="search-words-input">Search Words</label>
+                        <input type="search" id="search-words-input" placeholder="Search Bangla, Japanese, or English...">-->
                         <div class="input-group"><label for="filter-lesson">Filter by Lesson</label><select id="filter-lesson"><option value="">All Lessons</option></select></div>
                         <div class="input-group"><label for="filter-category">Filter by Category</label><select id="filter-category"><option value="">All Categories</option><option value="Noun">Noun</option><option value="Verb">Verb</option><option value="Adjective">Adjective</option><option value="Adverb">Adverb</option><option value="Phrase">Phrase</option><option value="Particle">Particle</option><option value="Conjunction">Conjunction</option><option value="Counter">Counter</option><option value="Others">Others</option></select></div>
                     </div>
@@ -126,6 +129,12 @@
                 </div>
                 <div class="section-box">
                     <h2>All Sentences in Database</h2>
+                    <div class="admin-filters">
+                        <div class="input-group">
+                             <label for="search-sentences-input">Search Sentences</label>
+                             <input type="search" id="search-sentences-input" placeholder="Search JP, EN, or BN text...">
+                        </div>
+                    </div>
                     <button id="bulk-delete-sentences-btn" class="control-button" style="display:none; margin-bottom: 15px;">Delete Selected</button>
                     <p id="admin-loading-sentences">Loading sentences...</p>
                      <div class="table-container">

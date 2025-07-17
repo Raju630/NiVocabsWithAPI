@@ -1,4 +1,4 @@
-// admin.js (Final Corrected Version - Removed dead event listener)
+// admin.js (Final, Corrected Version with Working Pagination and Search)
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE ---
@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
     const adminTabs = document.querySelector('.nav-tabs');
-
     // Word Panel
     const wordsPanel = document.getElementById('words-panel');
     const addWordForm = document.getElementById('add-word-form');
@@ -24,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bulkDeleteWordsBtn = document.getElementById('bulk-delete-words-btn');
     const bulkUploadWordsForm = document.getElementById('bulk-upload-words-form');
     const bulkPasteWordsForm = document.getElementById('bulk-paste-words-form');
-
+    const searchWordsInput = document.getElementById('search-words-input');
     // Sentence Panel
     const sentencesPanel = document.getElementById('sentences-panel');
     const addSentenceForm = document.getElementById('add-sentence-form');
@@ -32,13 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingSentencesText = document.getElementById('admin-loading-sentences');
     const selectAllSentencesCheckbox = document.getElementById('select-all-sentences');
     const bulkDeleteSentencesBtn = document.getElementById('bulk-delete-sentences-btn');
+    const clearSentenceFormBtn = document.getElementById('clear-sentence-form-btn');
     const bulkUploadSentencesForm = document.getElementById('bulk-upload-sentences-form');
     const bulkPasteSentencesForm = document.getElementById('bulk-paste-sentences-form');
-    
+    const searchSentencesInput = document.getElementById('search-sentences-input');
     // Request Panel
     const requestsPanel = document.getElementById('requests-panel');
     const loadingRequestsText = document.getElementById('admin-loading-requests');
     const requestsTableBody = document.getElementById('requests-table-body');
+    
+    // --- DEBOUNCE HELPER ---
+    const debounce = (func, delay = 500) => { let timeoutId; return (...args) => { clearTimeout(timeoutId); timeoutId = setTimeout(() => { func.apply(this, args); }, delay); }; };
 
     // --- API HELPER ---
     const apiRequest = async (endpoint, method, data = {}) => {
@@ -46,11 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(endpoint, { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminPassword}` }, body: method !== 'GET' ? JSON.stringify(data) : undefined });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'API request failed'); }
             return response.status === 204 ? null : response.json();
-        } catch (error) {
-            alert(`API Error: ${error.message}`);
-            if (error.message.includes('Unauthorized')) logout();
-            throw error;
-        }
+        } catch (error) { alert(`API Error: ${error.message}`); if (error.message.includes('Unauthorized')) logout(); throw error; }
     };
 
     // --- INITIALIZATION & LOGIN ---
@@ -79,13 +78,19 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (targetPanelId === 'requests-panel') loadRequests();
     });
 
-    // --- WORD MANAGEMENT ---
+    // --- WORD MANAGEMENT (PAGINATION CORRECTED) ---
     const resetAndLoadWords = () => { wordsState = { data: [], currentPage: 0, total: 0, isLoading: false, limit: 30 }; wordsTableBody.innerHTML = ''; loadWords(); };
     const loadWords = async () => {
         if (wordsState.isLoading || (wordsState.currentPage > 0 && wordsState.data.length >= wordsState.total)) return;
         wordsState.isLoading = true; loadingWordsText.style.display = 'block';
         const nextPage = wordsState.currentPage + 1;
-        const endpoint = `/.netlify/functions/admin-words?page=${nextPage}&limit=${wordsState.limit}&lesson=${filterLesson.value}&category=${filterCategory.value}`;
+        let endpoint = `/.netlify/functions/admin-words?page=${nextPage}&limit=${wordsState.limit}`;
+        const searchTerm = searchWordsInput.value;
+        if (searchTerm) {
+            endpoint += `&search=${encodeURIComponent(searchTerm)}`;
+        } else {
+            endpoint += `&lesson=${filterLesson.value}&category=${filterCategory.value}`;
+        }
         try {
             const response = await apiRequest(endpoint, 'GET');
             if (response.data && response.data.length > 0) {
@@ -93,12 +98,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 wordsState.data.push(...response.data);
                 wordsState.currentPage = nextPage;
                 response.data.forEach(word => wordsTableBody.appendChild(createWordRow(word)));
-            } else if (nextPage === 1) { loadingWordsText.textContent = 'No words found for this filter.'; }
+            } else if (nextPage === 1) { loadingWordsText.textContent = 'No words found.'; }
         } catch (error) { loadingWordsText.textContent = `Failed to load words.`;
         } finally { wordsState.isLoading = false; if (wordsState.data.length > 0 || nextPage > 1) loadingWordsText.style.display = 'none'; }
     };
     filterLesson.addEventListener('change', resetAndLoadWords);
     filterCategory.addEventListener('change', resetAndLoadWords);
+    searchWordsInput.addEventListener('input', debounce(resetAndLoadWords));
     addWordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = { bangla: document.getElementById('add-bangla').value, japanese: document.getElementById('add-japanese').value, english: document.getElementById('add-english').value, category: document.getElementById('add-category').value, lesson: parseInt(document.getElementById('add-lesson').value, 10) || 0 };
@@ -128,12 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.querySelector('td[data-field="japanese"]').innerHTML = `<input type="text" class="inline-edit-input word-japanese-input" value="${word.japanese}">`;
             row.querySelector('td[data-field="english"]').innerHTML = `<input type="text" class="inline-edit-input word-english-input" value="${word.english || ''}">`;
             row.querySelector('td[data-field="lesson"]').innerHTML = `<input type="number" class="inline-edit-input word-lesson-input" value="${word.lesson || ''}">`;
-            const currentCategory = (word.category || '').toLowerCase(); // Make comparison case-insensitive
-            const categories = ["Noun", "Verb", "Adjective", "Adverb", "Phrase", "Particle", "Conjunction", "Counter", "Others"];
-            const optionsHTML = categories.map(cat => 
-                `<option value="${cat}" ${currentCategory === cat.toLowerCase() ? 'selected' : ''}>${cat}</option>`
-            ).join('');
-            row.querySelector('td[data-field="category"]').innerHTML = `<select class="inline-edit-select word-category-input"><option value="">None</option>${optionsHTML}</select>`;
+            row.querySelector('td[data-field="category"]').innerHTML = `<select class="inline-edit-select word-category-input"><option value="">None</option><option value="Noun" ${word.category === 'Noun' ? 'selected' : ''}>Noun</option><option value="Verb" ${word.category === 'Verb' ? 'selected' : ''}>Verb</option><option value="Adjective" ${word.category === 'Adjective' ? 'selected' : ''}>Adjective</option><option value="Adverb" ${word.category === 'Adverb' ? 'selected' : ''}>Adverb</option><option value="Phrase" ${word.category === 'Phrase' ? 'selected' : ''}>Phrase</option><option value="Particle" ${word.category === 'Particle' ? 'selected' : ''}>Particle</option><option value="Conjunction" ${word.category === 'Conjunction' ? 'selected' : ''}>Conjunction</option><option value="Counter" ${word.category === 'Counter' ? 'selected' : ''}>Counter</option><option value="Others" ${word.category === 'Others' ? 'selected' : ''}>Others</option></select>`;
             row.querySelector('.actions-cell').innerHTML = `<button class="control-button save-edit-btn">Save</button><button class="control-button cancel-edit-btn">Cancel</button>`;
         } else {
             const word = wordsState.data.find(w => w._id === row.dataset.id);
@@ -141,13 +142,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- SENTENCE MANAGEMENT ---
+    // --- SENTENCE MANAGEMENT (PAGINATION CORRECTED) ---
     const resetAndLoadSentences = () => { sentencesState = { data: [], currentPage: 0, total: 0, isLoading: false, limit: 30 }; sentencesTableBody.innerHTML = ''; loadAllSentences(); };
     const loadAllSentences = async () => {
         if (sentencesState.isLoading || (sentencesState.currentPage > 0 && sentencesState.data.length >= sentencesState.total)) return;
         sentencesState.isLoading = true; loadingSentencesText.style.display = 'block';
         const nextPage = sentencesState.currentPage + 1;
-        const endpoint = `/.netlify/functions/admin-sentences?page=${nextPage}&limit=${sentencesState.limit}`;
+        const searchTerm = searchSentencesInput.value;
+        let endpoint = `/.netlify/functions/admin-sentences?page=${nextPage}&limit=${sentencesState.limit}`;
+        if(searchTerm) endpoint += `&search=${encodeURIComponent(searchTerm)}`;
         try {
             const response = await apiRequest(endpoint, 'GET');
             if (response.data && response.data.length > 0) {
@@ -155,17 +158,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 sentencesState.data.push(...response.data);
                 sentencesState.currentPage = nextPage;
                 response.data.forEach(s => sentencesTableBody.appendChild(createSentenceRow(s)));
-            } else if (nextPage === 1) {
-                loadingSentencesText.textContent = 'No sentences found.';
-            }
+            } else if (nextPage === 1) { loadingSentencesText.textContent = 'No sentences found.'; }
         } catch (error) { loadingSentencesText.textContent = `Failed to load sentences.`;
         } finally { sentencesState.isLoading = false; if(sentencesState.data.length > 0 || nextPage > 1) loadingSentencesText.style.display = 'none'; }
     };
+    searchSentencesInput.addEventListener('input', debounce(resetAndLoadSentences));
     addSentenceForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = { jp: document.getElementById('add-sentence-jp').value, en: document.getElementById('add-sentence-en').value, bn: document.getElementById('add-sentence-bn').value };
         try { await apiRequest('/.netlify/functions/admin-sentences', 'POST', data); addSentenceForm.reset(); resetAndLoadSentences(); } catch (error) {}
     });
+    addSentenceForm.querySelector('#clear-sentence-form-btn')?.addEventListener('click', () => { addSentenceForm.reset(); document.getElementById('edit-sentence-id').value = ''; });
     function createSentenceRow(sentence) {
         const row = document.createElement('tr'); row.dataset.id = sentence._id;
         row.innerHTML = `<td><input type="checkbox" class="sentence-checkbox" data-id="${sentence._id}"></td><td data-field="jp"><span>${sentence.jp}</span></td><td data-field="en"><span>${sentence.en}</span></td><td data-field="bn"><span>${sentence.bn || ''}</span></td><td class="actions-cell"><button class="control-button edit-sentence-btn">Edit</button><button class="control-button delete-sentence-btn">Delete</button></td>`;
@@ -214,9 +217,9 @@ document.addEventListener('DOMContentLoaded', () => {
     requestsTableBody.addEventListener('click', async (e) => {
         if (e.target.classList.contains('resolve-request-btn')) {
             const requestId = e.target.dataset.id;
-            //if (confirm('Are you sure you want to resolve this request?')) {
+            if (confirm('Are you sure you want to resolve this request?')) {
                 try { await apiRequest('/.netlify/functions/admin-requests', 'DELETE', { id: requestId }); loadRequests(); } catch (error) {}
-            //}
+            }
         }
     });
 
@@ -268,18 +271,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await apiRequest(endpoint, 'POST', data);
             alert(`Success! Inserted ${result.insertedCount} new item(s). The list will now refresh.`);
             if (type === 'words') resetAndLoadWords(); else resetAndLoadSentences();
-        } catch (error) {
-            console.error('Bulk upload processing error:', error);
+        } catch (error) { console.error('Bulk upload processing error:', error);
         } finally {
             submitButton.disabled = false;
-            if (submitButton.closest('form').id.includes('paste')) {
-                submitButton.textContent = 'Upload Pasted Text';
-            } else {
-                submitButton.textContent = 'Upload From File';
-            }
+            if (submitButton.closest('form').id.includes('paste')) { submitButton.textContent = 'Upload Pasted Text'; } 
+            else { submitButton.textContent = 'Upload From File'; }
         }
     };
-    
     const handleBulkFileUpload = async (e, type) => {
         e.preventDefault(); const fileInput = e.target.querySelector('input[type="file"]'); const submitButton = e.target.querySelector('button[type="submit"]'); const file = fileInput.files[0]; if (!file) return alert('Please select a JSON file.');
         const reader = new FileReader();
@@ -288,10 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) { alert(`Upload failed: Invalid JSON in file. ${error.message}`); submitButton.disabled = false; submitButton.textContent = 'Upload From File';
             } finally { fileInput.value = ''; }
         };
-        reader.onerror = () => { alert('Failed to read the file.'); submitButton.disabled = false; submitButton.textContent = 'Upload From File'; };
+        reader.onerror = () => { alert('Failed to read file.'); submitButton.disabled = false; submitButton.textContent = 'Upload From File'; };
         reader.readAsText(file);
     };
-
     const handleBulkPasteUpload = async (e, type) => {
         e.preventDefault(); const textArea = e.target.querySelector('textarea'); const submitButton = e.target.querySelector('button[type="submit"]'); const text = textArea.value; if (!text.trim()) return alert('Please paste JSON text.');
         try { const data = JSON.parse(text); await processBulkUpload(data, type, submitButton); textArea.value = '';
