@@ -222,9 +222,9 @@ document.addEventListener('DOMContentLoaded', () => {
     requestsTableBody.addEventListener('click', async (e) => {
         if (e.target.classList.contains('resolve-request-btn')) {
             const requestId = e.target.dataset.id;
-            if (confirm('Are you sure you want to resolve this request?')) {
+           
                 try { await apiRequest('/.netlify/functions/admin-requests', 'DELETE', { id: requestId }); loadRequests(); } catch (error) {}
-            }
+            
         }
     });
 
