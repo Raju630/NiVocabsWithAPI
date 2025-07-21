@@ -873,7 +873,7 @@ function speakJapanese(text) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'ja-JP';
-        utterance.rate = 0.9;
+        utterance.rate = 0.7;
         window.speechSynthesis.speak(utterance);
     }
 }
