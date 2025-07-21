@@ -19,7 +19,8 @@ const App = {
         isSelectionMode: false,
         allWordsForView: [],
         renderBatchSize: 30,
-        currentPage: 0
+        currentPage: 0,
+        targetParticles: ['は', 'が', 'を', 'に', 'へ', 'で', 'と', 'も', 'の', 'か', 'や'],
     },
     elements: {
         appContainer: document.getElementById('dictionary-app-container'),
@@ -584,6 +585,8 @@ function renderQuizTab() {
                     <button class="control-button bn-jp" data-quiz-type="bangla-to-jp">Bangla → Japanese</button>
                     <button class="control-button jp-bn" data-quiz-type="jp-to-bangla">Japanese → Bangla</button>
                 </div>
+                <h4 style="width: 100%; text-align: center; margin-top: 25px; color: white;">Grammar Quiz</h4>
+                    <button class="control-button" data-quiz-type="particle-quiz" style="background-color: #1c3d7d;">Fill the Particle</button>
             </div>
             <div id="quiz-score-container" style="display:none; margin-top: 20px;">
                 <div id="quiz-progress-bar" style="background-color: #555; border-radius: 5px; margin-bottom: 10px;">
@@ -596,8 +599,136 @@ background: linear-gradient(90deg, rgba(227, 255, 231, 1) 0%, rgba(217, 231, 255
         </div>`;
     document.querySelector('button[data-quiz-type="bangla-to-jp"]').addEventListener('click', () => startQuiz('bangla-to-jp'));
     document.querySelector('button[data-quiz-type="jp-to-bangla"]').addEventListener('click', () => startQuiz('jp-to-bangla'));
+    document.querySelector('button[data-quiz-type="particle-quiz"]').addEventListener('click', () => startParticleQuiz());
 }
 // In dictionary.js, find and replace the renderSettingsTab function
+// --- NEW: Add these functions to dictionary.js ---
+
+// Function to start the particle quiz
+function startParticleQuiz() {
+    // Reset any previous quiz state
+    App.config.quizScore = 0;
+    App.config.currentQuiz = {
+        type: 'particle-quiz',
+        currentQuestionIndex: 0,
+        totalQuestions: parseInt(document.getElementById('quiz-length-select').value, 10),
+        wrongAnswers: [] // We can store the sentence/particle pair here
+    };
+
+    // Show the score container
+    document.getElementById('quiz-score-container').style.display = 'block';
+    document.getElementById('quiz-results-container').style.display = 'none';
+    document.getElementById('quiz-score').textContent = '0';
+    document.getElementById('total-questions').textContent = App.config.currentQuiz.totalQuestions;
+
+    displayParticleQuestion();
+}
+
+// In dictionary.js, replace the existing displayParticleQuestion function
+
+async function displayParticleQuestion() {
+    const { currentQuestionIndex, totalQuestions } = App.config.currentQuiz;
+    const quizContent = document.getElementById('quiz-content');
+
+    if (currentQuestionIndex >= totalQuestions) {
+        endQuiz();
+        return;
+    }
+
+    quizContent.innerHTML = `<p>Loading next question...</p>`;
+
+    try {
+        const response = await fetch('/.netlify/functions/get-particle-quiz-sentence');
+        if (!response.ok) throw new Error('Failed to fetch sentence.');
+        const sentence = await response.json();
+
+        // --- USE THE SAME SMARTER REGEX ON THE FRONTEND ---
+        const smartRegex = new RegExp(`(?<![ぁ-ん])(${App.config.targetParticles.join('|')})(?![ぁ-ん])`, 'g');
+        const matches = sentence.jp.match(smartRegex);
+
+        if (!matches || matches.length === 0) {
+            // Fallback: if the smart regex fails for some reason, try again
+            console.warn("Smart regex found no particles in sentence:", sentence.jp);
+            displayParticleQuestion();
+            return;
+        }
+
+        // The matches are the actual particles found in the sentence
+        const presentParticles = [...new Set(matches)]; // Use Set to get unique particles
+        
+        // Pick one of the found particles to be the answer
+        const particleToTest = presentParticles[Math.floor(Math.random() * presentParticles.length)];
+        
+        // --- IMPROVED REPLACEMENT LOGIC ---
+        // Replace only the first occurrence of the chosen particle to avoid ambiguity
+        // in sentences where the same particle appears twice.
+        const gappedSentence = sentence.jp.replace(new RegExp(`(?<![ぁ-ん])${particleToTest}(?![ぁ-ん])`), ' [＿＿] ');
+
+        // Create multiple-choice options
+        const options = [particleToTest];
+        const otherParticles = App.config.targetParticles.filter(p => p !== particleToTest);
+        while (options.length < 4 && otherParticles.length > 0) {
+            const randomParticle = otherParticles.splice(Math.floor(Math.random() * otherParticles.length), 1)[0];
+            options.push(randomParticle);
+        }
+        options.sort(() => Math.random() - 0.5);
+
+        App.config.currentQuiz.currentQuestionData = {
+            sentence: sentence,
+            answer: particleToTest
+        };
+
+        quizContent.innerHTML = `
+            <div class="quiz-bangla-word" style="font-family: 'Noto Sans JP', sans-serif; font-size: 1.4em;">${gappedSentence}</div>
+            <p style="color: #ccc; margin: 10px 0;">(${sentence.bn || sentence.en})</p>
+            <div id="quiz-options">${options.map(o => `<div class="quiz-option">${o}</div>`).join('')}</div>
+        `;
+
+        quizContent.querySelectorAll('.quiz-option').forEach(el => {
+            el.addEventListener('click', (e) => checkParticleAnswer(e.target));
+        });
+
+    } catch (error) {
+        quizContent.innerHTML = `<p style="color: #ff8a80;">Error loading question. Trying again...</p>`;
+        setTimeout(displayParticleQuestion, 2000);
+    }
+    
+    document.getElementById('question-count').textContent = currentQuestionIndex + 1;
+    const progressPercent = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+    document.getElementById('quiz-progress-bar-inner').style.width = `${progressPercent}%`;
+}
+
+// In dictionary.js, replace the checkParticleAnswer function
+
+function checkParticleAnswer(element) {
+    const { sentence, answer } = App.config.currentQuiz.currentQuestionData;
+    const userChoice = element.textContent;
+    const isCorrect = userChoice === answer;
+
+    document.querySelectorAll('#quiz-options .quiz-option').forEach(el => el.style.pointerEvents = 'none');
+
+    if (isCorrect) {
+        element.classList.add('correct');
+        App.config.quizScore++;
+        document.getElementById('quiz-score').textContent = App.config.quizScore;
+    } else {
+        element.classList.add('wrong');
+        document.querySelectorAll('#quiz-options .quiz-option').forEach(el => {
+            if (el.textContent === answer) el.classList.add('correct');
+        });
+        
+        // --- NEW: Store detailed info for the review screen ---
+        App.config.currentQuiz.wrongAnswers.push({
+            sentence: sentence,
+            answer: answer,
+            userChoice: userChoice
+        });
+    }
+
+    App.config.currentQuiz.currentQuestionIndex++;
+    setTimeout(displayParticleQuestion, 1500);
+}
+
 
 async function renderSettingsTab() {
     const settingsContainer = document.getElementById('settings-tab');
@@ -914,29 +1045,77 @@ function checkAnswer(element) {
     App.config.currentQuiz.currentQuestionIndex++;
     setTimeout(displayQuiz, 1500);
 }
+// In dictionary.js, replace the existing endQuiz function
+
 function endQuiz() {
-    const { totalQuestions, wrongAnswers } = App.config.currentQuiz;
+    const { totalQuestions, wrongAnswers, type } = App.config.currentQuiz;
     const quizScore = App.config.quizScore;
     const quizContent = document.getElementById('quiz-content');
     const resultsContainer = document.getElementById('quiz-results-container');
+    
     quizContent.innerHTML = '';
     document.getElementById('quiz-score-container').style.display = 'none';
     resultsContainer.style.display = 'block';
+
     const percentage = totalQuestions > 0 ? Math.round((quizScore / totalQuestions) * 100) : 0;
-    let resultsHTML = `<h2 style="font-size:1.3em;">Quiz Complete!</h2><p style="font-size: 1em; margin: 10px 0;">Final Score: <strong>${quizScore} / ${totalQuestions} (${percentage}%)</strong></p>`;
+    
+    // --- START: Main Results Display ---
+    let resultsHTML = `
+        <h2 style="font-size:1.3em;">Quiz Complete!</h2>
+        <p style="font-size: 1em; margin: 10px 0;">
+            Final Score: <strong>${quizScore} / ${totalQuestions} (${percentage}%)</strong>
+        </p>
+    `;
+
+    // --- THIS IS THE BUG FIX & NEW FEATURE ---
     if (wrongAnswers.length > 0) {
-        resultsHTML += `<h3>Words to Review:</h3><div class="word-list-container">${[...new Set(wrongAnswers)].map(word => createWordCard(word).outerHTML).join('')}</div>`;
+        resultsHTML += `<h3>Words to Review:</h3>`;
+        
+        // --- Review Logic for Vocabulary Quizzes ---
+        if (type.startsWith('type-') || type.startsWith('bangla-') || type.startsWith('jp-')) {
+            // Get unique wrong words to avoid duplicates in the review list
+            const uniqueWrongWords = [...new Set(wrongAnswers)]; 
+            resultsHTML += `<div class="word-list-container">
+                                ${uniqueWrongWords.map(word => createWordCard(word).outerHTML).join('')}
+                            </div>`;
+        }
+        
+        // --- NEW: Review Logic for Particle Quiz ---
+        else if (type === 'particle-quiz') {
+            resultsHTML += `<div class="particle-review-container">`;
+            wrongAnswers.forEach(item => {
+                // Highlight the correct particle in the sentence
+                const highlightedSentence = item.sentence.jp.replace(
+                    item.answer, 
+                    `<strong class="highlight-particle">${item.answer}</strong>`
+                );
+                
+                resultsHTML += `
+                    <div class="particle-review-item">
+                        <p class="sentence-japanese">${highlightedSentence}</p>
+                        <p class="sentence-bangla">(${item.sentence.bn || item.sentence.en})</p>
+                        <p class="wrong-answer-info">Your Answer: <span class="wrong-particle">${item.userChoice}</span> | Correct: <span class="correct-particle">${item.answer}</span></p>
+                    </div>
+                `;
+            });
+            resultsHTML += `</div>`;
+        }
+
     } else {
+        // This message now ONLY shows if they truly got everything correct
         resultsHTML += `<p style="color: #4CAF50; font-weight: bold;">Excellent! You got all questions correct!</p>`;
     }
+    // --- END FIX ---
+
     resultsHTML += `<div style="text-align: center; margin-top: 25px;"><button id="play-again-btn" class="add-button">Play Again</button></div>`;
     resultsContainer.innerHTML = resultsHTML;
+
+    // Re-attach event listener for the play again button
     document.getElementById('play-again-btn').addEventListener('click', () => {
         resultsContainer.style.display = 'none';
         renderQuizTab();
     });
 }
-// ... (all other functions are unchanged)
 
 function openEditModal(word) {
     const wordData = getWordData(word);
