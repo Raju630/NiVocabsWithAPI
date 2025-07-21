@@ -13,7 +13,6 @@ const App = {
         currentRandomWord: null,
         mainPracticeList: [],
         weakPracticeList: [],
-        pexelsApiKey: '0YZ1YqOAGmfXwoIBl7elGumGGMYqwrOJgwqyqstQuMEGtyPJjiFFNr3K',
         currentQuiz: { },
         quizScore: 0,
         studyList: [],
@@ -922,18 +921,19 @@ async function showMnemonic(banglaWord) {
     const modalBody = modal.querySelector('#mnemonic-modal-body');
     modal.style.display = 'flex';
     modalBody.innerHTML = '<p class="image-loading-text">Searching for a visual mnemonic...</p>';
+
     const englishWord = wordData.en;
     const japaneseWord = wordData.meaning;
-    const apiKey = App.config.pexelsApiKey;
-    if (!apiKey || apiKey === 'YOUR_PEXELS_API_KEY_HERE') {
-        modalBody.innerHTML = '<p class="image-error-text">Pexels API Key not set.</p>';
-        return;
-    }
+
     try {
-        const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(englishWord)}&per_page=1`, {
-            headers: { Authorization: apiKey }
-        });
-        if (!response.ok) throw new Error(`Pexels API error: ${response.statusText}`);
+        // Call your new, secure serverless function
+        const response = await fetch(`/.netlify/functions/get-image?query=${encodeURIComponent(englishWord)}`);
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || `API error: ${response.statusText}`);
+        }
+        
         const data = await response.json();
         let imageHtml = `<p class="image-loading-text">No image found for "${englishWord}".</p>`;
         if (data.photos && data.photos.length > 0) {
@@ -953,7 +953,7 @@ async function showMnemonic(banglaWord) {
             ${imageHtml}
         `;
     } catch (error) {
-        console.error('Error fetching image from Pexels:', error);
+        console.error('Error fetching image from proxy:', error);
         modalBody.innerHTML = `<p class="image-error-text">${error.message}</p>`;
     }
 }

@@ -12,7 +12,7 @@ const StudyApp = {
         mnemonicModal: document.getElementById('mnemonic-modal'),
     },
     config: {
-        pexelsApiKey: '0YZ1YqOAGmfXwoIBl7elGumGGMYqwrOJgwqyqstQuMEGtyPJjiFFNr3K'
+        //pexelsApiKey: '0YZ1YqOAGmfXwoIBl7elGumGGMYqwrOJgwqyqstQuMEGtyPJjiFFNr3K'
     }
 };
 
@@ -248,5 +248,57 @@ async function showExampleSentences(banglaWord) {
 function speakJapanese(text) { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'ja-JP'; utterance.rate = 0.9; window.speechSynthesis.speak(utterance); } }
 function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function closeSentenceModal() { if (StudyApp.elements.sentenceModal) StudyApp.elements.sentenceModal.style.display = 'none'; }
-async function showMnemonic(banglaWord) { const wordData = StudyApp.data.dictionary[banglaWord]; if (!wordData || !wordData.en) return; const modal = StudyApp.elements.mnemonicModal; const modalBody = modal.querySelector('#mnemonic-modal-body'); modal.style.display = 'flex'; modalBody.innerHTML = '<p class="image-loading-text">Searching for a visual mnemonic...</p>'; try { const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(wordData.en)}&per_page=1`, { headers: { Authorization: StudyApp.config.pexelsApiKey } }); if (!response.ok) throw new Error(`Pexels API error: ${response.statusText}`); const data = await response.json(); let imageHtml = `<p class="image-loading-text">No image found for "${wordData.en}".</p>`; if (data.photos && data.photos.length > 0) { const photo = data.photos[0]; imageHtml = `<a href="${photo.url}" target="_blank" rel="noopener noreferrer" class="mnemonic-image-link"><img src="${photo.src.large}" alt="Visual for ${wordData.en}"></a><a href="https://www.pexels.com" target="_blank" class="pexels-credit">Photo by ${photo.photographer} on Pexels</a>`; } modalBody.innerHTML = `<div class="mnemonic-word-info"><div class="mnemonic-bangla">${banglaWord}</div><div class="mnemonic-japanese">${wordData.meaning}<span class="speak-icon" onclick="speakJapanese('${wordData.meaning}')">🔊</span></div></div>${imageHtml}`; } catch (error) { modalBody.innerHTML = `<p class="image-error-text">${error.message}</p>`; } }
+// --- THIS IS THE CORRECTED FUNCTION FOR study-session.js ---
+
+async function showMnemonic(banglaWord) {
+    // THE FIX IS HERE: We get data from StudyApp.data.dictionary directly.
+    const wordData = StudyApp.data.dictionary[banglaWord]; 
+    
+    if (!wordData || !wordData.en) {
+        // This part is safe to keep, it just alerts if there's no English term.
+        // You can uncomment it if you want the alert back.
+        // alert('No English translation available to search for a mnemonic for this word.');
+        return;
+    }
+
+    const modal = StudyApp.elements.mnemonicModal;
+    const modalBody = modal.querySelector('#mnemonic-modal-body');
+    modal.style.display = 'flex';
+    modalBody.innerHTML = '<p class="image-loading-text">Searching for a visual mnemonic...</p>';
+
+    const englishWord = wordData.en;
+    const japaneseWord = wordData.meaning;
+
+    try {
+        // This part is correct and calls your secure proxy function
+        const response = await fetch(`/.netlify/functions/get-image?query=${encodeURIComponent(englishWord)}`);
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || `API error: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        let imageHtml = `<p class="image-loading-text">No image found for "${englishWord}".</p>`;
+        if (data.photos && data.photos.length > 0) {
+            const photo = data.photos[0];
+            imageHtml = `
+                <a href="${photo.url}" target="_blank" rel="noopener noreferrer" class="mnemonic-image-link">
+                    <img src="${photo.src.large}" alt="Visual mnemonic for ${englishWord}">
+                </a>
+                <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" class="pexels-credit">Photo by ${photo.photographer} on Pexels</a>
+            `;
+        }
+        modalBody.innerHTML = `
+            <div class="mnemonic-word-info">
+                <div class="mnemonic-bangla">${banglaWord}</div>
+                <div class="mnemonic-japanese">${japaneseWord}<span class="speak-icon" onclick="speakJapanese('${japaneseWord}')">🔊</span></div>
+            </div>
+            ${imageHtml}
+        `;
+    } catch (error) {
+        console.error('Error fetching image from proxy:', error);
+        modalBody.innerHTML = `<p class="image-error-text">${error.message}</p>`;
+    }
+}
 function closeMnemonicModal() { if (StudyApp.elements.mnemonicModal) StudyApp.elements.mnemonicModal.style.display = 'none'; }
