@@ -597,29 +597,131 @@ background: linear-gradient(90deg, rgba(227, 255, 231, 1) 0%, rgba(217, 231, 255
     document.querySelector('button[data-quiz-type="bangla-to-jp"]').addEventListener('click', () => startQuiz('bangla-to-jp'));
     document.querySelector('button[data-quiz-type="jp-to-bangla"]').addEventListener('click', () => startQuiz('jp-to-bangla'));
 }
-function renderSettingsTab() {
-    document.getElementById('settings-tab').innerHTML = `
+// In dictionary.js, find and replace the renderSettingsTab function
+
+async function renderSettingsTab() {
+    const settingsContainer = document.getElementById('settings-tab');
+    settingsContainer.innerHTML = `<div class="section-box"><p>Loading settings...</p></div>`;
+
+    const getVoices = () => {
+        return new Promise(resolve => {
+            let voices = window.speechSynthesis.getVoices();
+            if (voices.length) {
+                resolve(voices);
+                return;
+            }
+            window.speechSynthesis.onvoiceschanged = () => {
+                voices = window.speechSynthesis.getVoices();
+                resolve(voices);
+            };
+        });
+    };
+
+    const allVoices = await getVoices();
+    const japaneseVoices = allVoices.filter(voice => voice.lang === 'ja-JP');
+    
+    // This part is correct. It correctly defaults to 'basic_default'
+    const currentVoice = localStorage.getItem('preferredVoice') || 'basic_default';
+
+    let voiceOptionsHTML = `
+        <option value="google" ${currentVoice === 'google' ? 'selected' : ''}>
+            High Quality (Google)
+        </option>
+    `;
+    
+    if (japaneseVoices.length > 0) {
+        // This part is correct
+        voiceOptionsHTML += japaneseVoices.map(voice => {
+            const isSelected = currentVoice === voice.name ? 'selected' : '';
+            return `<option value="${voice.name}" ${isSelected}>
+                        Basic - ${voice.name} (${voice.lang})
+                    </option>`;
+        }).join('');
+        
+        // --- ADD A GENERIC DEFAULT OPTION IF NO SPECIFIC VOICE IS SELECTED ---
+        // This handles the case where the saved preference is the generic 'basic_default'
+        if (!japaneseVoices.some(v => v.name === currentVoice) && currentVoice !== 'google') {
+             voiceOptionsHTML += `
+                <option value="basic_default" selected>
+                    Basic (Browser Default)
+                </option>
+            `;
+        } else if (!japaneseVoices.some(v => v.name === currentVoice)) {
+             voiceOptionsHTML += `
+                <option value="basic_default">
+                    Basic (Browser Default)
+                </option>
+            `;
+        }
+
+    } else {
+        // --- THIS IS THE CORRECTED PART ---
+        // Add the 'selected' check to the fallback option
+        voiceOptionsHTML += `
+            <option value="basic_default" ${currentVoice === 'basic_default' ? 'selected' : ''}>
+                Basic (Browser Default)
+            </option>
+        `;
+    }
+
+    settingsContainer.innerHTML = `
+        <div class="section-box">
+            <h3>Voice & Sound</h3>
+            <div class="input-group">
+                <label for="voice-select">Speech Voice</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="voice-select" style="flex-grow: 1;">
+                        ${voiceOptionsHTML}
+                    </select>
+                    <button id="test-voice-btn" class="control-button" title="Test selected voice">🔊 Test</button>
+                </div>
+                <p style="font-size: 0.9em; color: #ccc; margin-top: 8px;">
+                    Select your preferred voice. You can test it before saving.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Rest of the HTML is unchanged -->
         <div class="section-box">
             <h3>Export/Import Data</h3>
-            <p>This will backup or restore YOUR added/edited/deleted words. It does not affect the main server dictionary.</p>
+            <p>This will backup or restore YOUR added/edited/deleted words.</p>
             <button id="export-btn" class="control-button">Export My Words</button>
             <input type="file" id="import-file" accept=".json" style="display: none">
             <button id="import-btn" class="control-button">Import My Words</button>
-            <hr style="margin: 20px 0;">
-            <h3>Reset Application</h3>
-            <p>This will erase all your added words and reset the initial lesson data. Use with caution!</p>
+        </div>
+        <div class="section-box">
+            <h3 style="color: #ff8a80;">Danger Zone</h3>
+            <p>This will erase all your added words and reset the initial lesson data.</p>
             <button id="reset-btn" class="control-button" style="background-color: #d9534f;">Reset All Data</button>
-        </div>`;
+        </div>
+    `;
+
+    // Event Listeners (These are correct and need no changes)
+    const voiceSelect = document.getElementById('voice-select');
+    
+    voiceSelect.addEventListener('change', () => {
+        localStorage.setItem('preferredVoice', voiceSelect.value);
+    });
+
+    document.getElementById('test-voice-btn').addEventListener('click', () => {
+        const selectedVoiceValue = voiceSelect.value;
+        const testText = "こんにちは";
+        speakJapanese(testText, selectedVoiceValue); 
+    });
+
     document.getElementById('export-btn').addEventListener('click', exportData);
     document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
     document.getElementById('import-file').addEventListener('change', importData);
     document.getElementById('reset-btn').addEventListener('click', resetApplication);
 }
-
 function attachAppEventListeners() {
     App.elements.appContainer.querySelector('.nav-tabs').addEventListener('click', (e) => {
         if (e.target.matches('.nav-tab')) {
             const tabName = e.target.dataset.tab;
+            if (tabName === 'settings') {
+                // Call our new async function to render the settings
+                renderSettingsTab(); 
+            }
             if (tabName !== 'dictionary') {
                 window.removeEventListener('scroll', handleInfiniteScroll);
             } else {
@@ -868,15 +970,93 @@ function openEditModal(word) {
 function closeEditModal() {
     App.elements.modal.style.display = 'none';
 }
-function speakJapanese(text) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ja-JP';
-        utterance.rate = 0.7;
-        window.speechSynthesis.speak(utterance);
+// FINAL speakJapanese function - Supports dynamic voice selection and testing.
+
+const audioCache = {};
+let currentAudio = null;
+
+async function speakJapanese(text, forceVoice = null) {
+    if (!text || text.trim() === '') return;
+
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+    }
+    window.speechSynthesis.cancel();
+
+    // Use the forced voice if provided (for testing), otherwise get from localStorage
+    const voicePreference = forceVoice || localStorage.getItem('preferredVoice') || 'basic_default';
+
+    // If the preference is Google's voice, use the API
+    if (voicePreference === 'google') {
+        if (audioCache[text]) {
+            currentAudio = audioCache[text];
+            currentAudio.play();
+            return;
+        }
+        try {
+            const response = await fetch(`/.netlify/functions/get-google-speech?text=${encodeURIComponent(text)}`);
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Proxy fetch failed');
+            }
+            const data = await response.json();
+            const audioSrc = `data:audio/mpeg;base64,${data.audioContent}`;
+            const audio = new Audio(audioSrc);
+            audioCache[text] = audio;
+            currentAudio = audio;
+            audio.play();
+        } catch (error) {
+            console.error('High-quality voice failed:', error);
+            console.warn('Falling back to basic default voice.');
+            speakWithBasicVoice(text, 'basic_default'); // Fallback
+        }
+    } else {
+        // Otherwise, use the browser's basic voice, passing the specific voice name
+        speakWithBasicVoice(text, voicePreference);
     }
 }
+
+// This helper function can now select a specific voice by name
+function speakWithBasicVoice(text, voiceName) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ja-JP';
+    utterance.rate = 0.7;
+
+    const voices = window.speechSynthesis.getVoices();
+    let selectedVoice = null;
+
+    if (voiceName && voiceName !== 'basic_default') {
+        // Find the specific voice the user selected
+        selectedVoice = voices.find(voice => voice.name === voiceName);
+    } 
+    
+    if (!selectedVoice) {
+        // Fallback to the first available Japanese voice if the specific one isn't found
+        // or if the setting is 'basic_default'
+        selectedVoice = voices.find(voice => voice.lang === 'ja-JP');
+    }
+    
+    if (selectedVoice) {
+        utterance.voice = selectedVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+}
+
+// Keep the pre-loader
+window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+};
+
+window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+};
+
+// Pre-load voices for the basic synthesizer. Some browsers need this.
+window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+};
 function exportData() {
     const userData = {
         userWords: App.data.userWords,

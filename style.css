@@ -1356,3 +1356,30 @@ footer {
 /* Fade-in animation */
 .fade-in-section { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
 .fade-in-section.is-visible { opacity: 1; transform: translateY(0); }
+
+
+/* --- Add these new rules to your style.css file --- */
+
+/* Style for the select element itself */
+select#voice-select {
+    background-color: rgba(0, 0, 0, 0.3); /* Dark background */
+    color: var(--text-color); /* Light text color */
+    border: 1px solid var(--glass-border);
+    padding: 12px 15px;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+}
+
+/* Style for the dropdown options */
+select#voice-select option {
+    background-color: #1e293b; /* A dark color from your gradient */
+    color: var(--text-color);
+    padding: 10px; /* Add some padding inside the options for better spacing */
+}
+
+/* Optional: Style for when the dropdown is open (supported in some browsers) */
+select#voice-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(28, 61, 125, 0.5);
+}

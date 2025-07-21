@@ -245,7 +245,93 @@ async function showExampleSentences(banglaWord) {
         }
     }
 }
-function speakJapanese(text) { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'ja-JP'; utterance.rate = 0.9; window.speechSynthesis.speak(utterance); } }
+// FINAL speakJapanese function - Supports dynamic voice selection and testing.
+
+const audioCache = {};
+let currentAudio = null;
+
+async function speakJapanese(text, forceVoice = null) {
+    if (!text || text.trim() === '') return;
+
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+    }
+    window.speechSynthesis.cancel();
+
+    // Use the forced voice if provided (for testing), otherwise get from localStorage
+    const voicePreference = forceVoice || localStorage.getItem('preferredVoice') || 'basic_default';
+
+    // If the preference is Google's voice, use the API
+    if (voicePreference === 'google') {
+        if (audioCache[text]) {
+            currentAudio = audioCache[text];
+            currentAudio.play();
+            return;
+        }
+        try {
+            const response = await fetch(`/.netlify/functions/get-google-speech?text=${encodeURIComponent(text)}`);
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Proxy fetch failed');
+            }
+            const data = await response.json();
+            const audioSrc = `data:audio/mpeg;base64,${data.audioContent}`;
+            const audio = new Audio(audioSrc);
+            audioCache[text] = audio;
+            currentAudio = audio;
+            audio.play();
+        } catch (error) {
+            console.error('High-quality voice failed:', error);
+            console.warn('Falling back to basic default voice.');
+            speakWithBasicVoice(text, 'basic_default'); // Fallback
+        }
+    } else {
+        // Otherwise, use the browser's basic voice, passing the specific voice name
+        speakWithBasicVoice(text, voicePreference);
+    }
+}
+
+// This helper function can now select a specific voice by name
+function speakWithBasicVoice(text, voiceName) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ja-JP';
+    utterance.rate = 0.7;
+
+    const voices = window.speechSynthesis.getVoices();
+    let selectedVoice = null;
+
+    if (voiceName && voiceName !== 'basic_default') {
+        // Find the specific voice the user selected
+        selectedVoice = voices.find(voice => voice.name === voiceName);
+    } 
+    
+    if (!selectedVoice) {
+        // Fallback to the first available Japanese voice if the specific one isn't found
+        // or if the setting is 'basic_default'
+        selectedVoice = voices.find(voice => voice.lang === 'ja-JP');
+    }
+    
+    if (selectedVoice) {
+        utterance.voice = selectedVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+}
+
+// Keep the pre-loader
+window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+};
+
+window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+};
+
+// Pre-load voices for the basic synthesizer. Some browsers need this.
+window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+};
 function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function closeSentenceModal() { if (StudyApp.elements.sentenceModal) StudyApp.elements.sentenceModal.style.display = 'none'; }
 // --- THIS IS THE CORRECTED FUNCTION FOR study-session.js ---
