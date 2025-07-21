@@ -1,6 +1,6 @@
 .env
 # Local Netlify folder
 .netlify
-/api/
-/data/
-admin.js
+api
+data
+node_modules
