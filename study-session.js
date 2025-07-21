@@ -12,7 +12,7 @@ const StudyApp = {
         mnemonicModal: document.getElementById('mnemonic-modal'),
     },
     config: {
-        //pexelsApiKey: '0YZ1YqOAGmfXwoIBl7elGumGGMYqwrOJgwqyqstQuMEGtyPJjiFFNr3K'
+        
     }
 };
 
