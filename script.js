@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, 15000); // 15,000 milliseconds = 15 seconds
                     // --- END NEW PART ---
                 }
-            }, 60000); // 60,000 milliseconds = 1 minute
+            }, 30000); // 60,000 milliseconds = 1 minute
         });
 
         if (installButton) {
