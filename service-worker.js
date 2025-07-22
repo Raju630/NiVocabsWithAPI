@@ -1,6 +1,6 @@
 // service-worker.js (Final Version)
 
-const CACHE_NAME = 'n5-dictionary-cache-v4'; // IMPORTANT: Version must be updated
+const CACHE_NAME = 'n5-dictionary-cache-v5'; // IMPORTANT: Version must be updated
 
 // The manifest is no longer critical for the update logic, so it's removed from this list.
 const urlsToCache = [
@@ -74,7 +74,12 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Clean up old caches
+self.addEventListener('message', event => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
+});
+// Clean up old caches and take control
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -87,6 +92,8 @@ self.addEventListener('activate', event => {
           }
         })
       );
+    }).then(() => {
+      return self.clients.claim();
     })
   );
 });

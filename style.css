@@ -1429,3 +1429,35 @@ select#voice-select:focus {
     color: #5cb85c; /* Soft green for the correct answer */
     font-weight: bold;
 }
+
+/* --- Add this to the end of style.css --- */
+.update-notification {
+    display: none; /* Hidden by default */
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--accent-teal);
+    color: var(--text-color-dark);
+    padding: 15px 25px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 15px var(--glass-shadow);
+    z-index: 3000;
+    font-weight: 700;
+    align-items: center;
+    gap: 15px;
+}
+
+.update-notification.show {
+    display: flex; /* Use flex to show it */
+}
+
+#reload-button {
+    background-color: rgba(0,0,0,0.2);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+}

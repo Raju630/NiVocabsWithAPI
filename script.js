@@ -91,6 +91,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+     let newWorker;
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js').then(reg => {
+            reg.addEventListener('updatefound', () => {
+                // A new service worker is installing.
+                newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    // Has the new worker finished installing? If so,
+                    // it's waiting to activate.
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // Show the "new version" notification
+                        const notification = document.getElementById('update-notification');
+                        if (notification) {
+                            notification.classList.add('show');
+                        }
+                    }
+                });
+            });
+        });
+
+        const reloadButton = document.getElementById('reload-button');
+        if (reloadButton) {
+            reloadButton.addEventListener('click', () => {
+                // When the user clicks "Refresh", send a message to the new
+                // service worker telling it to activate.
+                newWorker.postMessage({ action: 'skipWaiting' });
+            });
+        }
+        
+        // This listens for the 'controllerchange' event, which happens
+        // after the new worker has taken control.
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            // The new worker has activated! Reload the page to use the new assets.
+            window.location.reload();
+        });
+    }
+
     // --- 5. INITIALIZE DROPDOWN ---
     // This is called last to make sure AppConfig is loaded
     populateDropdown();
