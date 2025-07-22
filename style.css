@@ -1461,3 +1461,58 @@ select#voice-select:focus {
     cursor: pointer;
     font-weight: 700;
 }
+
+/* --- New PWA Install Button Styles --- */
+
+.pwa-install-button {
+    display: none; /* Hidden by default */
+    position: fixed;
+    bottom: 85px; /* Position it above the scroll-to-top button */
+    right: 20px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 28px; /* Pill shape */
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 1002; /* Higher than scroll-to-top */
+    box-shadow: 0 4px 12px var(--glass-shadow);
+    transition: all 0.3s ease;
+    
+    /* Flexbox to align icon and text */
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.pwa-install-button:hover {
+    transform: scale(1.05);
+    background-color: #2e5099;
+}
+
+/* We'll use a 'show' class to make it visible with an animation */
+.pwa-install-button.show {
+    display: inline-flex;
+    animation: fadeInAndUp 0.5s ease-out;
+}
+
+@keyframes fadeInAndUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Adjust position on mobile to avoid overlap */
+@media (max-width: 768px) {
+    .pwa-install-button {
+        bottom: 75px;
+        right: 15px;
+    }
+}
