@@ -1516,3 +1516,82 @@ select#voice-select:focus {
         right: 15px;
     }
 }
+/* --- Final PWA Install Button with Thin Line Timer --- */
+
+.pwa-install-button {
+    display: none; 
+    position: fixed;
+    bottom: 85px; 
+    right: 20px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 28px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 1002;
+    box-shadow: 0 4px 12px var(--glass-shadow);
+    transition: all 0.3s ease;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    overflow: hidden; /* This is still important */
+}
+
+/* The new thin line timer bar */
+.pwa-install-button::before {
+    content: '';
+    position: absolute;
+    bottom: 0; /* Position it at the bottom */
+    left: 0;
+    height: 4px; /* The thickness of the line */
+    width: 100%;
+    background-color: var(--accent-teal); /* A bright, noticeable color */
+    
+    /* The animation will be applied when the 'animate-timer' class is added */
+    transform: scaleX(1); /* Start at full width */
+    transform-origin: left; /* Make it shrink from right to left */
+    transition: transform 0.2s; /* A little smoothing */
+}
+
+.pwa-install-button:hover {
+    transform: scale(1.05);
+}
+
+.pwa-install-button.show {
+    display: inline-flex;
+    animation: fadeInAndUp 0.5s ease-out;
+}
+
+/* When the timer should run, we trigger the animation on the pseudo-element */
+.pwa-install-button.show.animate-timer::before {
+    /* We use 'transform' for better performance than animating 'width' */
+    transform: scaleX(0);
+    transition: transform 15s linear; /* The animation happens here */
+}
+
+/* The fade-in animation for the button itself (no change) */
+@keyframes fadeInAndUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments (no change) */
+@media (max-width: 768px) {
+    .pwa-install-button {
+        bottom: 75px;
+        right: 15px;
+    }
+}
+/* Change this rule in style.css */
+.pwa-install-button.show.animate-timer::before {
+    animation: shrink-timer 15s linear forwards;
+}

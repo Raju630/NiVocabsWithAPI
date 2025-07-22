@@ -1,8 +1,6 @@
 // service-worker.js (Final Version)
 
-const CACHE_NAME = 'n5-dictionary-cache-v5'; // IMPORTANT: Version must be updated
-
-// The manifest is no longer critical for the update logic, so it's removed from this list.
+const CACHE_NAME = 'n5-dictionary-cache-v7'; 
 const urlsToCache = [
   '/',
   '/index.html',
@@ -16,7 +14,7 @@ const urlsToCache = [
   '/study-session.js',
   '/icon.png',
   '/raju.png',
-  '/data/full_data.json' // Still cached for offline fallback
+  '/popup-sound.mp3',
 ];
 
 // Install the service worker and cache files
