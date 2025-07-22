@@ -131,27 +131,35 @@ document.addEventListener('DOMContentLoaded', () => {
         // In script.js, inside the 'DOMContentLoaded' event listener
 
         // --- NEW: PWA Install Prompt Logic (with disappearing button) ---
-        let deferredPrompt;
-        const installButton = document.getElementById('pwa-install-button');
+let deferredPrompt;
+const installButton = document.getElementById('pwa-install-button');
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
+// --- NEW PART 1: Create the audio object once at the start ---
+const installPopupSound = new Audio('/popup-sound.mp3');
+installPopupSound.volume = 1; // Set volume to 50% to be subtle
 
-            // --- TIMER 1: Wait 1 minute before showing the button ---
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    setTimeout(() => {
+        if (installButton) {
+            installButton.classList.add('show');
+
+            // --- NEW PART 2: Play the sound when the button appears ---
+            // We use a .catch() to prevent errors if the user hasn't interacted
+            // with the page yet, which is a browser security requirement for audio.
+            installPopupSound.play().catch(error => {
+                console.log("Audio play was prevented by browser:", error);
+            });
+            // --- END NEW PART 2 ---
+
             setTimeout(() => {
-                if (installButton) {
-                    installButton.classList.add('show');
-
-                    // --- THIS IS THE NEW PART ---
-                    // --- TIMER 2: After showing the button, wait 15 seconds to hide it ---
-                    setTimeout(() => {
-                        installButton.classList.remove('show');
-                    }, 15000); // 15,000 milliseconds = 15 seconds
-                    // --- END NEW PART ---
-                }
-            }, 30000); // 60,000 milliseconds = 1 minute
-        });
+                installButton.classList.remove('show');
+            }, 15000); 
+        }
+    }, 30000); 
+});
 
         if (installButton) {
             installButton.addEventListener('click', async () => {
