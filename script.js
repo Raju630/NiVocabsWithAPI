@@ -128,57 +128,58 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.reload();
         });
     }
-     let deferredPrompt; // This will hold the install event
-    const installButton = document.getElementById('pwa-install-button');
+        // In script.js, inside the 'DOMContentLoaded' event listener
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent the default mini-infobar from appearing on mobile
-        e.preventDefault();
-        
-        // Stash the event so it can be triggered later.
-        deferredPrompt = e;
+        // --- NEW: PWA Install Prompt Logic (with disappearing button) ---
+        let deferredPrompt;
+        const installButton = document.getElementById('pwa-install-button');
 
-        // Start a timer. If the user is still here after 1 minute (60000ms),
-        // show our custom install button.
-        setTimeout(() => {
-            if (installButton) {
-                installButton.classList.add('show');
-            }
-        }, 60000); // 60,000 milliseconds = 1 minute
-    });
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
 
-    if (installButton) {
-        installButton.addEventListener('click', async () => {
-            // Hide our custom button
-            installButton.classList.remove('show');
-            
-            // Show the browser's install prompt.
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                
-                // Wait for the user to respond to the prompt
-                const { outcome } = await deferredPrompt.userChoice;
-                
-                if (outcome === 'accepted') {
-                    console.log('User accepted the PWA installation');
-                } else {
-                    console.log('User dismissed the PWA installation');
+            // --- TIMER 1: Wait 1 minute before showing the button ---
+            setTimeout(() => {
+                if (installButton) {
+                    installButton.classList.add('show');
+
+                    // --- THIS IS THE NEW PART ---
+                    // --- TIMER 2: After showing the button, wait 15 seconds to hide it ---
+                    setTimeout(() => {
+                        installButton.classList.remove('show');
+                    }, 15000); // 15,000 milliseconds = 15 seconds
+                    // --- END NEW PART ---
                 }
-                
-                // We can't use the prompt again, so clear it.
-                deferredPrompt = null;
-            }
+            }, 60000); // 60,000 milliseconds = 1 minute
         });
-    }
 
-    // Optional: If the app is installed, hide the button forever.
-    window.addEventListener('appinstalled', () => {
-        console.log('PWA was installed');
         if (installButton) {
-            installButton.style.display = 'none';
+            installButton.addEventListener('click', async () => {
+                // We don't need to hide the button on click anymore because it might have
+                // already been hidden by the timer. Checking for deferredPrompt is enough.
+                
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        console.log('User accepted the PWA installation');
+                        // Hide the button permanently if they install
+                        installButton.style.display = 'none';
+                    } else {
+                        console.log('User dismissed the PWA installation');
+                    }
+                    deferredPrompt = null;
+                }
+            });
         }
-        deferredPrompt = null;
-    });
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            if (installButton) {
+                installButton.style.display = 'none';
+            }
+            deferredPrompt = null;
+        });
     // --- 5. INITIALIZE DROPDOWN ---
     // This is called last to make sure AppConfig is loaded
     populateDropdown();
