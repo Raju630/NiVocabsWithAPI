@@ -1595,3 +1595,33 @@ select#voice-select:focus {
 .pwa-install-button.show.animate-timer::before {
     animation: shrink-timer 15s linear forwards;
 }
+
+/* --- New Style for Hiding Particle Quiz Translation --- */
+
+.particle-translation.hidden {
+    display: none;
+}
+/* --- New Styles for the Particle Quiz "Show Meaning" Button --- */
+
+/* Find this existing rule and replace it */
+#particle-hint-container {
+    text-align: center; /* This is inherited, but good to be explicit */
+    min-height: 45px;
+    margin: 15px 0;
+    /* We don't need flexbox here anymore */
+}
+/* The button's specific style */
+.show-meaning-button {
+    background-color: transparent; /* Make it look less like a primary action */
+    border: 1px solid var(--glass-border);
+    color: #a7c5ff; /* A softer blue color */
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.show-meaning-button:hover {
+    background-color: var(--glass-bg); /* Use the glass background on hover */
+    color: white;
+    border-color: #a7c5ff;
+}

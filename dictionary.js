@@ -642,48 +642,49 @@ async function displayParticleQuestion() {
         if (!response.ok) throw new Error('Failed to fetch sentence.');
         const sentence = await response.json();
 
-        // --- USE THE SAME SMARTER REGEX ON THE FRONTEND ---
+        // ... (The logic for finding the particle and creating options is the same and correct) ...
         const smartRegex = new RegExp(`(?<![ぁ-ん])(${App.config.targetParticles.join('|')})(?![ぁ-ん])`, 'g');
         const matches = sentence.jp.match(smartRegex);
-
         if (!matches || matches.length === 0) {
-            // Fallback: if the smart regex fails for some reason, try again
-            console.warn("Smart regex found no particles in sentence:", sentence.jp);
-            displayParticleQuestion();
-            return;
+            displayParticleQuestion(); return;
         }
-
-        // The matches are the actual particles found in the sentence
-        const presentParticles = [...new Set(matches)]; // Use Set to get unique particles
-        
-        // Pick one of the found particles to be the answer
+        const presentParticles = [...new Set(matches)];
         const particleToTest = presentParticles[Math.floor(Math.random() * presentParticles.length)];
-        
-        // --- IMPROVED REPLACEMENT LOGIC ---
-        // Replace only the first occurrence of the chosen particle to avoid ambiguity
-        // in sentences where the same particle appears twice.
         const gappedSentence = sentence.jp.replace(new RegExp(`(?<![ぁ-ん])${particleToTest}(?![ぁ-ん])`), ' [＿＿] ');
-
-        // Create multiple-choice options
         const options = [particleToTest];
         const otherParticles = App.config.targetParticles.filter(p => p !== particleToTest);
         while (options.length < 4 && otherParticles.length > 0) {
-            const randomParticle = otherParticles.splice(Math.floor(Math.random() * otherParticles.length), 1)[0];
-            options.push(randomParticle);
+            options.push(otherParticles.splice(Math.floor(Math.random() * otherParticles.length), 1)[0]);
         }
         options.sort(() => Math.random() - 0.5);
+        App.config.currentQuiz.currentQuestionData = { sentence, answer: particleToTest };
 
-        App.config.currentQuiz.currentQuestionData = {
-            sentence: sentence,
-            answer: particleToTest
-        };
-
+        // --- THIS IS THE MODIFIED PART ---
+        // We now have a single container for the hint.
         quizContent.innerHTML = `
             <div class="quiz-bangla-word" style="font-family: 'Noto Sans JP', sans-serif; font-size: 1.4em;">${gappedSentence}</div>
-            <p style="color: #ccc; margin: 10px 0;">(${sentence.bn || sentence.en})</p>
+            
+            <div id="particle-hint-container">
+                <!-- The "Show Meaning" button starts inside the container -->
+                <button id="show-meaning-particle-btn" class="control-button show-meaning-button">
+                    Show Meaning
+                </button>
+            </div>
+
             <div id="quiz-options">${options.map(o => `<div class="quiz-option">${o}</div>`).join('')}</div>
         `;
 
+        // Add event listener for the new button
+        document.getElementById('show-meaning-particle-btn').addEventListener('click', () => {
+            const hintContainer = document.getElementById('particle-hint-container');
+            // Replace the button with the actual translation
+            hintContainer.innerHTML = `
+                <p style="color: #ccc; margin: 10px 0;">(${sentence.bn || sentence.en})</p>
+            `;
+        });
+        // --- END MODIFICATION ---
+
+        // Add event listeners for the quiz options (no change here)
         quizContent.querySelectorAll('.quiz-option').forEach(el => {
             el.addEventListener('click', (e) => checkParticleAnswer(e.target));
         });
@@ -693,6 +694,7 @@ async function displayParticleQuestion() {
         setTimeout(displayParticleQuestion, 2000);
     }
     
+    // Update progress bar (no change here)
     document.getElementById('question-count').textContent = currentQuestionIndex + 1;
     const progressPercent = ((currentQuestionIndex + 1) / totalQuestions) * 100;
     document.getElementById('quiz-progress-bar-inner').style.width = `${progressPercent}%`;
