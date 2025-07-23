@@ -1,6 +1,6 @@
 // service-worker.js (Final Version)
 
-const CACHE_NAME = 'n5-dictionary-cache-v7'; 
+const CACHE_NAME = 'n5-dictionary-cache-v1.0'; 
 const urlsToCache = [
   '/',
   '/index.html',
