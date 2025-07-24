@@ -1272,13 +1272,27 @@ function importData(event) {
     };
     reader.readAsText(file);
 }
+// New showMnemonic function for Unsplash API
+
 async function showMnemonic(banglaWord) {
-    const wordData = getWordData(banglaWord);
+    // This helper function might be different in study-session.js
+    // Ensure you use the correct way to get wordData in each file.
+    // For dictionary.js:
+    const wordData = getWordData(banglaWord); 
+    // For study-session.js:
+    // const wordData = StudyApp.data.dictionary[banglaWord];
+
     if (!wordData || !wordData.en) {
         alert('No English translation available to search for a mnemonic for this word.');
         return;
     }
+    
+    // This part is different for each file
+    // For dictionary.js:
     const modal = App.elements.mnemonicModal;
+    // For study-session.js:
+    // const modal = StudyApp.elements.mnemonicModal;
+
     const modalBody = modal.querySelector('#mnemonic-modal-body');
     modal.style.display = 'flex';
     modalBody.innerHTML = '<p class="image-loading-text">Searching for a visual mnemonic...</p>';
@@ -1287,8 +1301,8 @@ async function showMnemonic(banglaWord) {
     const japaneseWord = wordData.meaning;
 
     try {
-        // Call your new, secure serverless function
-        const response = await fetch(`/.netlify/functions/get-image?query=${encodeURIComponent(englishWord)}`);
+        // Call your new, secure Unsplash function
+        const response = await fetch(`/.netlify/functions/get-unsplash-image?query=${encodeURIComponent(englishWord)}`);
 
         if (!response.ok) {
             const err = await response.json();
@@ -1297,15 +1311,21 @@ async function showMnemonic(banglaWord) {
         
         const data = await response.json();
         let imageHtml = `<p class="image-loading-text">No image found for "${englishWord}".</p>`;
-        if (data.photos && data.photos.length > 0) {
-            const photo = data.photos[0];
+        
+        // --- Unsplash response format is different from Pexels ---
+        if (data.results && data.results.length > 0) {
+            const photo = data.results[0];
             imageHtml = `
-                <a href="${photo.url}" target="_blank" rel="noopener noreferrer" class="mnemonic-image-link">
-                    <img src="${photo.src.large}" alt="Visual mnemonic for ${englishWord}">
+                <a href="${photo.links.html}" target="_blank" rel="noopener noreferrer" class="mnemonic-image-link" cursor="none">
+                    <img src="${photo.urls.regular}" alt="${photo.alt_description || 'Visual mnemonic for ' + englishWord}">
                 </a>
-                <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" class="pexels-credit">Photo by ${photo.photographer} on Pexels</a>
+                <a href="${photo.user.links.html}" target="_blank" rel="noopener noreferrer" class="pexels-credit">
+                    Photo by ${photo.user.name} on Unsplash
+                </a>
             `;
         }
+        // --- End of format difference ---
+
         modalBody.innerHTML = `
             <div class="mnemonic-word-info">
                 <div class="mnemonic-bangla">${banglaWord}</div>
@@ -1314,7 +1334,7 @@ async function showMnemonic(banglaWord) {
             ${imageHtml}
         `;
     } catch (error) {
-        console.error('Error fetching image from proxy:', error);
+        console.error('Error fetching image from Unsplash proxy:', error);
         modalBody.innerHTML = `<p class="image-error-text">${error.message}</p>`;
     }
 }
