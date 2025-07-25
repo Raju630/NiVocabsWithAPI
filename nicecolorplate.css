@@ -1,0 +1,19 @@
+/* --- Modern, Compact, Eye-Comforting Redesign --- */
+:root {
+    --primary-color: #1e293b;
+    --secondary-color: #2dd4bf;
+    --accent-teal: #38bdf8;
+    --background-image: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    --glass-bg: rgba(30, 41, 59, 0.7);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-shadow: rgba(0,0,0,0.18);
+    --text-color: #e0e6ed;
+    --text-color-dark: #222;
+    --border-radius: 14px;
+    --nav-height: 56px;
+    --card-padding: 14px;
+    --section-padding: 18px;
+    --font-size-base: 15px;
+    --font-size-lg: 1.2em;
+    --font-size-sm: 0.95em;
+}
