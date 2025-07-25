@@ -334,28 +334,24 @@ window.speechSynthesis.onvoiceschanged = () => {
 };
 function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function closeSentenceModal() { if (StudyApp.elements.sentenceModal) StudyApp.elements.sentenceModal.style.display = 'none'; }
-// --- THIS IS THE CORRECTED FUNCTION FOR study-session.js ---
-
-// New showMnemonic function for Unsplash API
+// In study-session.js, use this version of showMnemonic
 
 async function showMnemonic(banglaWord) {
-    // This helper function might be different in study-session.js
-    // Ensure you use the correct way to get wordData in each file.
-    // For dictionary.js:
-    const wordData = getWordData(banglaWord); 
-    // For study-session.js:
-    // const wordData = StudyApp.data.dictionary[banglaWord];
+    // --- THIS IS THE FIX ---
+    // Get word data directly from the StudyApp object, NOT from getWordData()
+    const wordData = StudyApp.data.dictionary[banglaWord];
 
     if (!wordData || !wordData.en) {
         alert('No English translation available to search for a mnemonic for this word.');
         return;
     }
     
-    // This part is different for each file
-    // For dictionary.js:
-    const modal = App.elements.mnemonicModal;
-    // For study-session.js:
-    // const modal = StudyApp.elements.mnemonicModal;
+    // Get the modal from the StudyApp object
+    const modal = StudyApp.elements.mnemonicModal;
+    if (!modal) {
+        console.error("Mnemonic modal not found in StudyApp elements.");
+        return;
+    }
 
     const modalBody = modal.querySelector('#mnemonic-modal-body');
     modal.style.display = 'flex';
@@ -365,7 +361,7 @@ async function showMnemonic(banglaWord) {
     const japaneseWord = wordData.meaning;
 
     try {
-        // Call your new, secure Unsplash function
+        // This part is correct and calls your secure Unsplash function
         const response = await fetch(`/.netlify/functions/get-unsplash-image?query=${encodeURIComponent(englishWord)}`);
 
         if (!response.ok) {
@@ -376,7 +372,6 @@ async function showMnemonic(banglaWord) {
         const data = await response.json();
         let imageHtml = `<p class="image-loading-text">No image found for "${englishWord}".</p>`;
         
-        // --- Unsplash response format is different from Pexels ---
         if (data.results && data.results.length > 0) {
             const photo = data.results[0];
             imageHtml = `
@@ -388,7 +383,6 @@ async function showMnemonic(banglaWord) {
                 </a>
             `;
         }
-        // --- End of format difference ---
 
         modalBody.innerHTML = `
             <div class="mnemonic-word-info">
