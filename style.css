@@ -1641,7 +1641,7 @@ select#voice-select:focus {
     width: auto;
     min-width: 180px;
     background-color: rgba(0, 0, 0, 0.2);
-    color: var(--text-color);
+    color: rgba(255, 255, 255, 0.632);
 }
 #category-filter option {
     background-color: #1e293b;
