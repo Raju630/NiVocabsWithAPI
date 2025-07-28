@@ -13,6 +13,7 @@
     --success-color: #5cb85c;
     --danger-color: #d9534f;
     --border-radius: 8px;
+    --header-height: 65px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -22,7 +23,8 @@ body.admin-page {
     background-image: var(--background-image);
     background-attachment: fixed;
     color: var(--text-color);
-    padding-top: 65px;
+    padding-top: var(--header-height);
+    overflow: hidden; /* Prevent body scroll */
 }
 
 a { text-decoration: none; color: var(--primary-color); font-weight: 700; }
@@ -31,7 +33,7 @@ a:hover { color: var(--secondary-color); }
 h1, h2, h3, h4 { color: #ffffff; text-shadow: 0 1px 3px var(--glass-shadow); }
 h2 { font-size: 1.8em; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
 
-.container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+.container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
 
 /* --- Header --- */
 header {
@@ -40,7 +42,7 @@ header {
     border-bottom: 1px solid var(--glass-border);
     position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
 }
-nav { display: flex; justify-content: space-between; align-items: center; padding: 0 25px; height: 65px; max-width: 1280px; margin: 0 auto; }
+nav { display: flex; justify-content: space-between; align-items: center; padding: 0 25px; height: var(--header-height); max-width: 1400px; margin: 0 auto; }
 nav .logo a { font-size: 1.6em; color: #fff; }
 nav .nav-links { list-style: none; }
 nav .nav-links li a { color: var(--text-color); padding: 8px 16px; border-radius: var(--border-radius); transition: background-color 0.3s, color 0.3s; }
@@ -54,8 +56,9 @@ nav .nav-links li a:hover { background-color: var(--primary-color); color: white
     margin-bottom: 25px; border: 1px solid var(--glass-border);
     box-shadow: 0 4px 20px var(--glass-shadow);
 }
+.section-box:last-child { margin-bottom: 0; }
 
-/* --- Tabs Styling --- */
+/* --- Main Tabs Styling --- */
 .nav-tabs { display: flex; gap: 5px; border-bottom: 1px solid var(--glass-border); margin-bottom: 25px; flex-wrap: wrap;}
 .nav-tab { padding: 12px 22px; border: none; background-color: transparent; cursor: pointer; font-size: 16px; color: var(--text-color); border-bottom: 3px solid transparent; transition: color 0.3s, border-color 0.3s; }
 .nav-tab:hover { color: #fff; }
@@ -63,29 +66,44 @@ nav .nav-links li a:hover { background-color: var(--primary-color); color: white
 .admin-panel { display: none; }
 .admin-panel.active { display: block; }
 
+/* --- MODIFIED: Two-Column Grid with Independent Scrolling --- */
+.admin-grid {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 25px;
+    height: calc(100vh - var(--header-height) - 110px); /* Full height minus header and tabs */
+}
+
+.admin-actions-column, .admin-data-column {
+    overflow-y: auto; /* Enable vertical scroll on each column */
+    height: 100%;
+    padding-right: 10px; /* Space for scrollbar */
+}
+/* Scrollbar styling */
+.admin-actions-column::-webkit-scrollbar, .admin-data-column::-webkit-scrollbar { width: 8px; }
+.admin-actions-column::-webkit-scrollbar-track, .admin-data-column::-webkit-scrollbar-track { background: transparent; }
+.admin-actions-column::-webkit-scrollbar-thumb, .admin-data-column::-webkit-scrollbar-thumb { background-color: var(--glass-border); border-radius: 20px; }
+
+
 /* --- Form & Input Styling --- */
 .input-group { margin-bottom: 15px; }
 .input-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9em; color: #ccc; }
-input[type="text"],
-input[type="number"],
-input[type="password"],
-input[type="search"], /* Added search input to the list */
-select,
-textarea {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius);
-    font-size: 16px;
-    background-color: rgba(0,0,0,0.2);
-    color: var(--text-color);
-    transition: border-color 0.3s, box-shadow 0.3s;
+input[type="text"], input[type="number"], input[type="password"], input[type="search"], select, textarea {
+    width: 100%; padding: 12px 15px; border: 1px solid var(--glass-border); border-radius: var(--border-radius);
+    font-size: 16px; background-color: rgba(0,0,0,0.2); color: var(--text-color); transition: border-color 0.3s, box-shadow 0.3s;
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(28, 61, 125, 0.5); }
 input[type="file"] { background: transparent; border: 1px dashed var(--glass-border); padding: 10px; }
 input[type="file"]::-webkit-file-upload-button { background: var(--primary-color); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
-.add-word-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; align-items: end; }
+.add-word-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end; }
 textarea { font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; resize: vertical; }
+
+/* --- Bulk Upload Tabs --- */
+.upload-tabs { display: flex; border-bottom: 1px solid var(--glass-border); margin-bottom: 20px; }
+.upload-tab { padding: 10px 15px; background: none; border: none; color: var(--text-color); cursor: pointer; font-size: 1em; border-bottom: 2px solid transparent; transition: all 0.3s; }
+.upload-tab.active { color: #fff; border-bottom-color: var(--secondary-color); font-weight: bold; }
+.upload-panel { display: none; }
+.upload-panel.active { display: block; }
 
 /* --- Button Styling --- */
 .add-button, .control-button { padding: 12px 20px; background-color: var(--primary-color); color: white; border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 16px; font-weight: 700; transition: background-color 0.3s, transform 0.2s; margin-right: 10px; }
@@ -111,20 +129,25 @@ td .inline-edit-input, td .inline-edit-select { width: 100%; padding: 8px; font-
 td.actions-cell { display: flex; gap: 8px; white-space: nowrap; }
 input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
 
-/* --- NEW: Grid for Upload Sections --- */
-.upload-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 25px;
-}
+/* --- Filter Bar Styling --- */
+.admin-filters { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; }
+.admin-filters .input-group { flex-grow: 1; }
 
 /* --- Responsive Media Queries --- */
-@media (max-width: 992px) {
-    .upload-grid {
-        grid-template-columns: 1fr; /* Stack on smaller screens */
+@media (max-width: 1200px) {
+    body.admin-page { overflow-y: auto; } /* Restore body scroll on smaller screens */
+    .admin-grid {
+        grid-template-columns: 1fr;
+        height: auto; /* Let content define height */
+    }
+    .admin-actions-column, .admin-data-column {
+        overflow-y: visible; /* Disable column scroll */
+        height: auto;
+        padding-right: 0;
     }
 }
 @media (max-width: 768px) {
+    .container { max-width: 100%; padding: 0 15px; }
     .nav-tabs { flex-wrap: wrap; }
     .nav-tab { font-size: 14px; padding: 10px 15px; }
     .admin-filters { flex-direction: column; gap: 15px; }
@@ -132,4 +155,24 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
     .add-button, .control-button, .edit-btn, .cancel-edit-btn { padding: 8px 12px; font-size: 14px; }
     .actions-cell { flex-wrap: wrap; }
 }
+/* --- Add this to the end of your admin.css file --- */
 
+/* Make the tab button a flex container */
+.nav-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* Space between text and badge */
+}
+
+/* The notification badge itself */
+.notification-badge {
+    background-color: var(--danger-color);
+    color: white;
+    border-radius: 10px; /* Pill shape */
+    padding: 2px 7px;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+    min-width: 20px;
+    text-align: center;
+}

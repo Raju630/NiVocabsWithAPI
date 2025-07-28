@@ -1,4 +1,4 @@
-// admin.js (Final, Corrected Version with Working Pagination and Search)
+// admin.js (Complete Version with Notification Badge)
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE ---
@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
     const adminTabs = document.querySelector('.nav-tabs');
+    const requestsNavTab = document.getElementById('requests-nav-tab');
     // Word Panel
-    const wordsPanel = document.getElementById('words-panel');
     const addWordForm = document.getElementById('add-word-form');
     const wordsTableBody = document.getElementById('words-table-body');
     const loadingWordsText = document.getElementById('admin-loading-words');
@@ -25,18 +25,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const bulkPasteWordsForm = document.getElementById('bulk-paste-words-form');
     const searchWordsInput = document.getElementById('search-words-input');
     // Sentence Panel
-    const sentencesPanel = document.getElementById('sentences-panel');
     const addSentenceForm = document.getElementById('add-sentence-form');
     const sentencesTableBody = document.getElementById('sentences-table-body');
     const loadingSentencesText = document.getElementById('admin-loading-sentences');
     const selectAllSentencesCheckbox = document.getElementById('select-all-sentences');
     const bulkDeleteSentencesBtn = document.getElementById('bulk-delete-sentences-btn');
-    const clearSentenceFormBtn = document.getElementById('clear-sentence-form-btn');
     const bulkUploadSentencesForm = document.getElementById('bulk-upload-sentences-form');
     const bulkPasteSentencesForm = document.getElementById('bulk-paste-sentences-form');
     const searchSentencesInput = document.getElementById('search-sentences-input');
     // Request Panel
-    const requestsPanel = document.getElementById('requests-panel');
     const loadingRequestsText = document.getElementById('admin-loading-requests');
     const requestsTableBody = document.getElementById('requests-table-body');
     
@@ -52,6 +49,22 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { alert(`API Error: ${error.message}`); if (error.message.includes('Unauthorized')) logout(); throw error; }
     };
 
+    // --- NOTIFICATION BADGE LOGIC ---
+    const fetchAndShowRequestCount = async () => {
+        try {
+            const { count } = await apiRequest('/.netlify/functions/admin-requests?countOnly=true', 'GET');
+            requestsNavTab.querySelector('.notification-badge')?.remove();
+            if (count > 0) {
+                const badge = document.createElement('span');
+                badge.className = 'notification-badge';
+                badge.textContent = count;
+                requestsNavTab.appendChild(badge);
+            }
+        } catch (error) {
+            console.error("Failed to fetch request count:", error);
+        }
+    };
+
     // --- INITIALIZATION & LOGIN ---
     const populateLessonFilter = () => { for (let i = 1; i <= 25; i++) { const o = document.createElement('option'); o.value = i; o.textContent = `Lesson ${i}`; filterLesson.appendChild(o); } };
     populateLessonFilter();
@@ -62,14 +75,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json(); if (!response.ok) throw new Error(result.error);
             adminPassword = passwordInput; loginSection.style.display = 'none'; adminContent.style.display = 'block';
             resetAndLoadWords();
+            fetchAndShowRequestCount();
         } catch (error) { loginError.textContent = 'Incorrect password.'; }
     });
     function logout() { adminPassword = null; loginSection.style.display = 'block'; adminContent.style.display = 'none'; }
 
-    // --- TAB SWITCHING ---
+    // --- UPLOAD TAB SWITCHING ---
+    const setupUploadTabs = (panelId) => {
+        const panel = document.getElementById(panelId);
+        const tabContainer = panel.querySelector('.upload-tabs');
+        if (!tabContainer) return;
+        tabContainer.addEventListener('click', (e) => {
+            if (!e.target.matches('.upload-tab')) return;
+            const targetPanelId = e.target.dataset.tab;
+            tabContainer.querySelectorAll('.upload-tab').forEach(tab => tab.classList.remove('active'));
+            panel.querySelectorAll('.upload-panel').forEach(p => p.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById(targetPanelId).classList.add('active');
+        });
+    };
+    setupUploadTabs('words-panel');
+    setupUploadTabs('sentences-panel');
+
+
+    // --- MAIN TAB SWITCHING ---
     adminTabs.addEventListener('click', (e) => {
         if (!e.target.matches('.nav-tab')) return;
         const targetPanelId = e.target.dataset.tab;
+        if (targetPanelId === 'requests-panel') {
+            requestsNavTab.querySelector('.notification-badge')?.remove();
+        }
         adminTabs.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active')); e.target.classList.add('active');
         document.querySelectorAll('.admin-panel').forEach(panel => panel.style.display = 'none');
         document.getElementById(targetPanelId).style.display = 'block';
@@ -78,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (targetPanelId === 'requests-panel') loadRequests();
     });
 
-    // --- WORD MANAGEMENT (PAGINATION CORRECTED) ---
+    // --- WORD MANAGEMENT ---
     const resetAndLoadWords = () => { wordsState = { data: [], currentPage: 0, total: 0, isLoading: false, limit: 30 }; wordsTableBody.innerHTML = ''; loadWords(); };
     const loadWords = async () => {
         if (wordsState.isLoading || (wordsState.currentPage > 0 && wordsState.data.length >= wordsState.total)) return;
@@ -134,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.querySelector('td[data-field="japanese"]').innerHTML = `<input type="text" class="inline-edit-input word-japanese-input" value="${word.japanese}">`;
             row.querySelector('td[data-field="english"]').innerHTML = `<input type="text" class="inline-edit-input word-english-input" value="${word.english || ''}">`;
             row.querySelector('td[data-field="lesson"]').innerHTML = `<input type="number" class="inline-edit-input word-lesson-input" value="${word.lesson || ''}">`;
-            const currentCategory = (word.category || '').toLowerCase(); // Make comparison case-insensitive
+            const currentCategory = (word.category || '').toLowerCase();
             const categories = ["Noun", "Verb", "Adjective", "Adverb", "Phrase", "Particle", "Conjunction", "Counter", "Others"];
             const optionsHTML = categories.map(cat => 
                 `<option value="${cat}" ${currentCategory === cat.toLowerCase() ? 'selected' : ''}>${cat}</option>`
@@ -147,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- SENTENCE MANAGEMENT (PAGINATION CORRECTED) ---
+    // --- SENTENCE MANAGEMENT ---
     const resetAndLoadSentences = () => { sentencesState = { data: [], currentPage: 0, total: 0, isLoading: false, limit: 30 }; sentencesTableBody.innerHTML = ''; loadAllSentences(); };
     const loadAllSentences = async () => {
         if (sentencesState.isLoading || (sentencesState.currentPage > 0 && sentencesState.data.length >= sentencesState.total)) return;
@@ -173,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = { jp: document.getElementById('add-sentence-jp').value, en: document.getElementById('add-sentence-en').value, bn: document.getElementById('add-sentence-bn').value };
         try { await apiRequest('/.netlify/functions/admin-sentences', 'POST', data); addSentenceForm.reset(); resetAndLoadSentences(); } catch (error) {}
     });
-    addSentenceForm.querySelector('#clear-sentence-form-btn')?.addEventListener('click', () => { addSentenceForm.reset(); document.getElementById('edit-sentence-id').value = ''; });
     function createSentenceRow(sentence) {
         const row = document.createElement('tr'); row.dataset.id = sentence._id;
         row.innerHTML = `<td><input type="checkbox" class="sentence-checkbox" data-id="${sentence._id}"></td><td data-field="jp"><span>${sentence.jp}</span></td><td data-field="en"><span>${sentence.en}</span></td><td data-field="bn"><span>${sentence.bn || ''}</span></td><td class="actions-cell"><button class="control-button edit-sentence-btn">Edit</button><button class="control-button delete-sentence-btn">Delete</button></td>`;
@@ -222,18 +256,27 @@ document.addEventListener('DOMContentLoaded', () => {
     requestsTableBody.addEventListener('click', async (e) => {
         if (e.target.classList.contains('resolve-request-btn')) {
             const requestId = e.target.dataset.id;
-           
-                try { await apiRequest('/.netlify/functions/admin-requests', 'DELETE', { id: requestId }); loadRequests(); } catch (error) {}
-            
+            try {
+                await apiRequest('/.netlify/functions/admin-requests', 'DELETE', { id: requestId });
+                loadRequests();
+                fetchAndShowRequestCount(); // Refresh count after resolving
+            } catch (error) {}
         }
     });
 
     // --- INFINITE SCROLL ---
-    const setupInfiniteScroll = (panelId, state, loaderFn) => {
-        window.addEventListener('scroll', () => { if (document.getElementById(panelId).style.display !== 'none' && (window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 300) { loaderFn(); } });
+    const setupInfiniteScroll = (panelId, loaderFn) => {
+        const dataColumn = document.querySelector(`#${panelId} .admin-data-column`);
+        if (dataColumn) {
+             dataColumn.addEventListener('scroll', () => { 
+                if ((dataColumn.scrollTop + dataColumn.clientHeight) >= dataColumn.scrollHeight - 300) { 
+                    loaderFn(); 
+                } 
+            });
+        }
     };
-    setupInfiniteScroll('words-panel', wordsState, loadWords);
-    setupInfiniteScroll('sentences-panel', sentencesState, loadAllSentences);
+    setupInfiniteScroll('words-panel', loadWords);
+    setupInfiniteScroll('sentences-panel', loadAllSentences);
 
     // --- BULK DELETION ---
     const setupBulkDelete = (type, selectAllCheckbox, tableBody, bulkDeleteBtn, checkboxClass) => {

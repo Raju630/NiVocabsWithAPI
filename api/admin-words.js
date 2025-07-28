@@ -26,13 +26,13 @@ export default async function handler(request) {
                 const url = new URL(request.url, `http://${request.headers.get('host')}`);
                 const lesson = url.searchParams.get('lesson');
                 const category = url.searchParams.get('category');
-                const search = url.searchParams.get('search'); // Get search term
+                const search = url.searchParams.get('search');
                 const page = parseInt(url.searchParams.get('page') || '1', 10);
                 const limit = parseInt(url.searchParams.get('limit') || '30', 10);
                 const skip = (page - 1) * limit;
 
                 let query = {};
-                // --- MODIFIED: Build query based on parameters ---
+                
                 if (search) {
                     const searchRegex = new RegExp(escapeRegExp(search), 'i');
                     query = {
@@ -44,7 +44,10 @@ export default async function handler(request) {
                     };
                 } else {
                     if (lesson) query.lesson = parseInt(lesson, 10);
-                    if (category) query.category = category;
+                    // --- FIX: Change category filter to be a case-insensitive regex match ---
+                    if (category) {
+                        query.category = { $regex: `^${escapeRegExp(category)}$`, $options: 'i' };
+                    }
                 }
 
                 const total = await collection.countDocuments(query);

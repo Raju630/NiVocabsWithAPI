@@ -19,13 +19,22 @@ export default async function handler(request) {
 
     try {
         switch (request.method) {
-            case 'GET':
-                // Fetch all pending requests, sorted by date
+            case 'GET': {
+                const url = new URL(request.url, `http://${request.headers.get('host')}`);
+                // --- NEW: Check for countOnly parameter ---
+                const countOnly = url.searchParams.get('countOnly') === 'true';
+
+                if (countOnly) {
+                    const count = await collection.countDocuments({ status: 'pending' });
+                    return new Response(JSON.stringify({ count }), { status: 200 });
+                }
+                
+                // Original logic to fetch all requests
                 const requests = await collection.find({ status: 'pending' }).sort({ requestedAt: 1 }).toArray();
                 return new Response(JSON.stringify(requests), { status: 200 });
+            }
 
             case 'DELETE': {
-                // To "resolve" a request, we'll delete it.
                 const body = await request.json();
                 if (!body.id) throw new Error("Request ID is required for deletion.");
                 
