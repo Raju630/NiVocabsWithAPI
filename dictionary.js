@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     App.config.lessonId = urlParams.get('id');
     renderApp();
-    fetchAndRenderWords();
+    resetAndLoadWords(); // Initial load
 });
 function renderSkeletons(container) {
     container.innerHTML = '';
@@ -80,17 +80,43 @@ function renderSkeletons(container) {
     }
 }
 
-async function fetchAndRenderWords(searchTerm = '') {
+function resetAndLoadWords() {
+    const container = document.getElementById('word-list-container');
+    if (!container) return;
+    window.removeEventListener('scroll', handleInfiniteScroll); // Remove old listener
+    App.config.allWordsForView = [];
+    App.config.currentPage = 0;
+    container.innerHTML = ''; // Clear previous results
+    fetchAndRenderWords();
+}
+
+async function fetchAndRenderWords() {
     const container = document.getElementById('word-list-container');
     if (!container) return;
     renderSkeletons(container);
+    
     let apiUrl = '/.netlify/functions/words';
-    const isSearching = searchTerm.length > 0;
-    if (isSearching) {
-        apiUrl += `?search=${encodeURIComponent(searchTerm)}`;
-    } else if (App.config.lessonId) {
-        apiUrl += `?lesson=${App.config.lessonId}`;
+    const searchTerm = document.getElementById('search-input')?.value.trim();
+    const category = document.getElementById('category-filter')?.value;
+    const lessonId = App.config.lessonId;
+
+    const params = new URLSearchParams();
+    if (searchTerm) {
+        // If there's a search term, other filters are ignored by the backend
+        params.append('search', searchTerm);
+    } else {
+        if (lessonId) {
+            params.append('lesson', lessonId);
+        }
+        if (category) {
+            params.append('category', category);
+        }
     }
+    const paramsString = params.toString();
+    if (paramsString) {
+        apiUrl += `?${paramsString}`;
+    }
+
     try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
@@ -189,7 +215,7 @@ function addWord() {
         App.data.deletedWords = App.data.deletedWords.filter(d => d !== word);
         saveUserData();
         updateLiveDictionary();
-        fetchAndRenderWords();
+        resetAndLoadWords();
         document.getElementById('word-input').value = '';
         document.getElementById('meaning-input').value = '';
         document.getElementById('en-input').value = '';
@@ -205,7 +231,7 @@ function deleteWord(word) {
     App.data.weakWords = App.data.weakWords.filter(w => w !== word);
     saveUserData();
     updateLiveDictionary();
-    fetchAndRenderWords();
+    resetAndLoadWords();
     renderWeakWordsList();
 }
 
@@ -237,7 +263,7 @@ function saveEditedWord() {
         App.data.deletedWords = App.data.deletedWords.filter(d => d !== newWord);
         saveUserData();
         updateLiveDictionary();
-        fetchAndRenderWords();
+        resetAndLoadWords();
         closeEditModal();
     }
 }
@@ -252,9 +278,16 @@ function resetApplication() {
 
 function getWordPool() {
     const allWords = App.data.liveDictionary ? Object.keys(App.data.liveDictionary) : [];
-    return App.config.lessonId
-        ? allWords.filter(w => getWordData(w).lesson == App.config.lessonId)
-        : allWords;
+    const categoryFilter = document.getElementById('category-filter')?.value;
+    let filteredWords = allWords;
+
+    if (App.config.lessonId) {
+        filteredWords = allWords.filter(w => getWordData(w).lesson == App.config.lessonId);
+    } else if (categoryFilter) {
+        filteredWords = allWords.filter(w => getWordData(w).category.toLowerCase() === categoryFilter.toLowerCase());
+    }
+
+    return filteredWords;
 }
 
 async function showExampleSentences(banglaWord) {
@@ -310,8 +343,6 @@ async function showExampleSentences(banglaWord) {
         
         const relevantSentences = await response.json();
         
-        // --- THIS IS THE MODIFIED LOGIC ---
-        
         let html = '';
         const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
 
@@ -331,7 +362,6 @@ async function showExampleSentences(banglaWord) {
             });
         }
 
-        // Now, check if we should add the request button
         if (relevantSentences.length < 3) {
             html += `
                 <div style="border-top: 1px solid var(--glass-border); margin-top: 20px; padding-top: 20px; text-align: center;">
@@ -343,7 +373,6 @@ async function showExampleSentences(banglaWord) {
         
         bodyEl.innerHTML = html;
 
-        // If the button was added, attach its event listener
         const requestButton = document.getElementById('request-sentence-btn');
         if (requestButton) {
             requestButton.addEventListener('click', () => {
@@ -355,8 +384,6 @@ async function showExampleSentences(banglaWord) {
                 submitSentenceRequest(wordObjectForRequest);
             });
         }
-
-        // --- END OF MODIFIED LOGIC ---
 
     } catch (error) {
         console.error("Error fetching sentences:", error);
@@ -458,7 +485,24 @@ function renderDictionaryTab() {
         </div>
         <div class="section-box" id="word-list-section">
             <div class="study-list-controls"><button id="toggle-select-mode-btn" class="control-button">Select for Study</button><div id="selection-actions" style="display: none;"><button id="start-study-btn" class="add-button">Start Practice (<span id="selected-count">0</span>)</button><button id="clear-selection-btn" class="control-button">Clear</button></div></div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 id="word-list-title"></h3><input type="search" id="search-input" placeholder="Search..." style="width: 250px;"></div>
+            
+            <!-- --- MODIFIED: Simplified filter layout --- -->
+            <div class="dictionary-filters">
+                <select id="category-filter">
+                    <option value="">All Categories</option>
+                    <option value="Noun">Noun</option>
+                    <option value="Verb">Verb</option>
+                    <option value="Adjective">Adjective</option>
+                    <option value="Adverb">Adverb</option>
+                    <option value="Phrase">Phrase</option>
+                    <option value="Particle">Particle</option>
+                    <option value="Conjunction">Conjunction</option>
+                    <option value="Counter">Counter</option>
+                    <option value="Others">Others</option>
+                </select>
+                <input type="search" id="search-input" placeholder="Search all words...">
+            </div>
+
             <div class="word-list-container" id="word-list-container"></div>
         </div>
     `;
@@ -468,11 +512,11 @@ function renderDictionaryTab() {
     document.getElementById('toggle-select-mode-btn').addEventListener('click', toggleSelectionMode);
     document.getElementById('start-study-btn').addEventListener('click', startStudySession);
     document.getElementById('clear-selection-btn').addEventListener('click', clearSelection);
-    document.getElementById('search-input').addEventListener('input', debounce((e) => {
-        fetchAndRenderWords(e.target.value.trim());
-    }));
+    
+    document.getElementById('search-input').addEventListener('input', debounce(resetAndLoadWords));
+    document.getElementById('category-filter').addEventListener('change', resetAndLoadWords);
+
     document.getElementById('word-list-container').addEventListener('click', handleWordCardClick);
-    window.addEventListener('scroll', handleInfiniteScroll);
 }
 function renderWeakWordsTab() {
     const container = document.getElementById('weak-words-tab');
@@ -603,30 +647,20 @@ background: linear-gradient(90deg, rgba(227, 255, 231, 1) 0%, rgba(217, 231, 255
     document.querySelector('button[data-quiz-type="jp-to-bangla"]').addEventListener('click', () => startQuiz('jp-to-bangla'));
     document.querySelector('button[data-quiz-type="particle-quiz"]').addEventListener('click', () => startParticleQuiz());
 }
-// In dictionary.js, find and replace the renderSettingsTab function
-// --- NEW: Add these functions to dictionary.js ---
-
-// Function to start the particle quiz
 function startParticleQuiz() {
-    // Reset any previous quiz state
     App.config.quizScore = 0;
     App.config.currentQuiz = {
         type: 'particle-quiz',
         currentQuestionIndex: 0,
         totalQuestions: parseInt(document.getElementById('quiz-length-select').value, 10),
-        wrongAnswers: [] // We can store the sentence/particle pair here
+        wrongAnswers: []
     };
-
-    // Show the score container
     document.getElementById('quiz-score-container').style.display = 'block';
     document.getElementById('quiz-results-container').style.display = 'none';
     document.getElementById('quiz-score').textContent = '0';
     document.getElementById('total-questions').textContent = App.config.currentQuiz.totalQuestions;
-
     displayParticleQuestion();
 }
-
-// In dictionary.js, replace the existing displayParticleQuestion function
 
 async function displayParticleQuestion() {
     const { currentQuestionIndex, totalQuestions } = App.config.currentQuiz;
@@ -643,8 +677,6 @@ async function displayParticleQuestion() {
         const response = await fetch('/.netlify/functions/get-particle-quiz-sentence');
         if (!response.ok) throw new Error('Failed to fetch sentence.');
         const sentence = await response.json();
-
-        // ... (The logic for finding the particle and creating options is the same and correct) ...
         const smartRegex = new RegExp(`(?<![ぁ-ん])(${App.config.targetParticles.join('|')})(?![ぁ-ん])`, 'g');
         const matches = sentence.jp.match(smartRegex);
         if (!matches || matches.length === 0) {
@@ -661,32 +693,21 @@ async function displayParticleQuestion() {
         options.sort(() => Math.random() - 0.5);
         App.config.currentQuiz.currentQuestionData = { sentence, answer: particleToTest };
 
-        // --- THIS IS THE MODIFIED PART ---
-        // We now have a single container for the hint.
         quizContent.innerHTML = `
             <div class="quiz-bangla-word" style="font-family: 'Noto Sans JP', sans-serif; font-size: 1.4em;">${gappedSentence}</div>
-            
             <div id="particle-hint-container">
-                <!-- The "Show Meaning" button starts inside the container -->
                 <button id="show-meaning-particle-btn" class="control-button show-meaning-button">
                     Show Meaning
                 </button>
             </div>
-
             <div id="quiz-options">${options.map(o => `<div class="quiz-option">${o}</div>`).join('')}</div>
         `;
-
-        // Add event listener for the new button
         document.getElementById('show-meaning-particle-btn').addEventListener('click', () => {
             const hintContainer = document.getElementById('particle-hint-container');
-            // Replace the button with the actual translation
             hintContainer.innerHTML = `
                 <p style="color: #ccc; margin: 10px 0;">(${sentence.bn || sentence.en})</p>
             `;
         });
-        // --- END MODIFICATION ---
-
-        // Add event listeners for the quiz options (no change here)
         quizContent.querySelectorAll('.quiz-option').forEach(el => {
             el.addEventListener('click', (e) => checkParticleAnswer(e.target));
         });
@@ -696,13 +717,10 @@ async function displayParticleQuestion() {
         setTimeout(displayParticleQuestion, 2000);
     }
     
-    // Update progress bar (no change here)
     document.getElementById('question-count').textContent = currentQuestionIndex + 1;
     const progressPercent = ((currentQuestionIndex + 1) / totalQuestions) * 100;
     document.getElementById('quiz-progress-bar-inner').style.width = `${progressPercent}%`;
 }
-
-// In dictionary.js, replace the checkParticleAnswer function
 
 function checkParticleAnswer(element) {
     const { sentence, answer } = App.config.currentQuiz.currentQuestionData;
@@ -721,7 +739,6 @@ function checkParticleAnswer(element) {
             if (el.textContent === answer) el.classList.add('correct');
         });
         
-        // --- NEW: Store detailed info for the review screen ---
         App.config.currentQuiz.wrongAnswers.push({
             sentence: sentence,
             answer: answer,
@@ -755,7 +772,6 @@ async function renderSettingsTab() {
     const allVoices = await getVoices();
     const japaneseVoices = allVoices.filter(voice => voice.lang === 'ja-JP');
     
-    // This part is correct. It correctly defaults to 'basic_default'
     const currentVoice = localStorage.getItem('preferredVoice') || 'basic_default';
 
     let voiceOptionsHTML = `
@@ -765,7 +781,6 @@ async function renderSettingsTab() {
     `;
     
     if (japaneseVoices.length > 0) {
-        // This part is correct
         voiceOptionsHTML += japaneseVoices.map(voice => {
             const isSelected = currentVoice === voice.name ? 'selected' : '';
             return `<option value="${voice.name}" ${isSelected}>
@@ -773,8 +788,6 @@ async function renderSettingsTab() {
                     </option>`;
         }).join('');
         
-        // --- ADD A GENERIC DEFAULT OPTION IF NO SPECIFIC VOICE IS SELECTED ---
-        // This handles the case where the saved preference is the generic 'basic_default'
         if (!japaneseVoices.some(v => v.name === currentVoice) && currentVoice !== 'google') {
              voiceOptionsHTML += `
                 <option value="basic_default" selected>
@@ -790,8 +803,6 @@ async function renderSettingsTab() {
         }
 
     } else {
-        // --- THIS IS THE CORRECTED PART ---
-        // Add the 'selected' check to the fallback option
         voiceOptionsHTML += `
             <option value="basic_default" ${currentVoice === 'basic_default' ? 'selected' : ''}>
                 Basic (Browser Default)
@@ -816,7 +827,6 @@ async function renderSettingsTab() {
             </div>
         </div>
         
-        <!-- Rest of the HTML is unchanged -->
         <div class="section-box">
             <h3>Export/Import Data</h3>
             <p>This will backup or restore YOUR added/edited/deleted words.</p>
@@ -831,7 +841,6 @@ async function renderSettingsTab() {
         </div>
     `;
 
-    // Event Listeners (These are correct and need no changes)
     const voiceSelect = document.getElementById('voice-select');
     
     voiceSelect.addEventListener('change', () => {
@@ -861,11 +870,9 @@ function attachAppEventListeners() {
             } else {
                 window.addEventListener('scroll', handleInfiniteScroll);
             }
-            // --- FIX: Re-render weak words list every time the tab is selected ---
             if (tabName === 'weak-words') {
                 renderWeakWordsList();
             }
-            // --- END FIX ---
             if (App.config.currentQuiz.type && tabName !== 'quiz') {
                 App.config.quizScore = 0;
                 App.config.currentQuiz = {};
@@ -1053,8 +1060,6 @@ function checkAnswer(element) {
     App.config.currentQuiz.currentQuestionIndex++;
     setTimeout(displayQuiz, 1500);
 }
-// In dictionary.js, replace the existing endQuiz function
-
 function endQuiz() {
     const { totalQuestions, wrongAnswers, type } = App.config.currentQuiz;
     const quizScore = App.config.quizScore;
@@ -1067,7 +1072,6 @@ function endQuiz() {
 
     const percentage = totalQuestions > 0 ? Math.round((quizScore / totalQuestions) * 100) : 0;
     
-    // --- START: Main Results Display ---
     let resultsHTML = `
         <h2 style="font-size:1.3em;">Quiz Complete!</h2>
         <p style="font-size: 1em; margin: 10px 0;">
@@ -1075,24 +1079,19 @@ function endQuiz() {
         </p>
     `;
 
-    // --- THIS IS THE BUG FIX & NEW FEATURE ---
     if (wrongAnswers.length > 0) {
         resultsHTML += `<h3>Words to Review:</h3>`;
         
-        // --- Review Logic for Vocabulary Quizzes ---
         if (type.startsWith('type-') || type.startsWith('bangla-') || type.startsWith('jp-')) {
-            // Get unique wrong words to avoid duplicates in the review list
             const uniqueWrongWords = [...new Set(wrongAnswers)]; 
             resultsHTML += `<div class="word-list-container">
                                 ${uniqueWrongWords.map(word => createWordCard(word).outerHTML).join('')}
                             </div>`;
         }
         
-        // --- NEW: Review Logic for Particle Quiz ---
         else if (type === 'particle-quiz') {
             resultsHTML += `<div class="particle-review-container">`;
             wrongAnswers.forEach(item => {
-                // Highlight the correct particle in the sentence
                 const highlightedSentence = item.sentence.jp.replace(
                     item.answer, 
                     `<strong class="highlight-particle">${item.answer}</strong>`
@@ -1110,15 +1109,12 @@ function endQuiz() {
         }
 
     } else {
-        // This message now ONLY shows if they truly got everything correct
         resultsHTML += `<p style="color: #4CAF50; font-weight: bold;">Excellent! You got all questions correct!</p>`;
     }
-    // --- END FIX ---
 
     resultsHTML += `<div style="text-align: center; margin-top: 25px;"><button id="play-again-btn" class="add-button">Play Again</button></div>`;
     resultsContainer.innerHTML = resultsHTML;
 
-    // Re-attach event listener for the play again button
     document.getElementById('play-again-btn').addEventListener('click', () => {
         resultsContainer.style.display = 'none';
         renderQuizTab();
@@ -1132,33 +1128,26 @@ function openEditModal(word) {
     const { meaning, category, en } = wordData;
     const modal = App.elements.modal;
 
-    // --- THIS IS THE FIX ---
-    // A helper function to convert a string to PascalCase (e.g., "noun" -> "Noun")
     const toPascalCase = (str) => {
         if (!str || typeof str !== 'string') return '';
         return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     };
 
     const formattedCategory = toPascalCase(category);
-    // --- END OF FIX ---
 
     modal.querySelector('#edit-original-word').value = word;
     modal.querySelector('#edit-word-input').value = word;
     modal.querySelector('#edit-meaning-input').value = meaning;
     modal.querySelector('#edit-en-input').value = en || '';
     
-    // Now we use the correctly formatted category name
     modal.querySelector('#edit-category-select').value = formattedCategory;
     
     modal.style.display = 'flex';
 }
 
-// ... (the rest of the file is unchanged)
 function closeEditModal() {
     App.elements.modal.style.display = 'none';
 }
-// FINAL speakJapanese function - Supports dynamic voice selection and testing.
-
 const audioCache = {};
 let currentAudio = null;
 
@@ -1171,10 +1160,8 @@ async function speakJapanese(text, forceVoice = null) {
     }
     window.speechSynthesis.cancel();
 
-    // Use the forced voice if provided (for testing), otherwise get from localStorage
     const voicePreference = forceVoice || localStorage.getItem('preferredVoice') || 'basic_default';
 
-    // If the preference is Google's voice, use the API
     if (voicePreference === 'google') {
         if (audioCache[text]) {
             currentAudio = audioCache[text];
@@ -1199,12 +1186,10 @@ async function speakJapanese(text, forceVoice = null) {
             speakWithBasicVoice(text, 'basic_default'); // Fallback
         }
     } else {
-        // Otherwise, use the browser's basic voice, passing the specific voice name
         speakWithBasicVoice(text, voicePreference);
     }
 }
 
-// This helper function can now select a specific voice by name
 function speakWithBasicVoice(text, voiceName) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ja-JP';
@@ -1214,13 +1199,10 @@ function speakWithBasicVoice(text, voiceName) {
     let selectedVoice = null;
 
     if (voiceName && voiceName !== 'basic_default') {
-        // Find the specific voice the user selected
         selectedVoice = voices.find(voice => voice.name === voiceName);
     } 
     
     if (!selectedVoice) {
-        // Fallback to the first available Japanese voice if the specific one isn't found
-        // or if the setting is 'basic_default'
         selectedVoice = voices.find(voice => voice.lang === 'ja-JP');
     }
     
@@ -1231,16 +1213,6 @@ function speakWithBasicVoice(text, voiceName) {
     window.speechSynthesis.speak(utterance);
 }
 
-// Keep the pre-loader
-window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
-};
-
-window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
-};
-
-// Pre-load voices for the basic synthesizer. Some browsers need this.
 window.speechSynthesis.onvoiceschanged = () => {
     window.speechSynthesis.getVoices();
 };
@@ -1278,27 +1250,15 @@ function importData(event) {
     };
     reader.readAsText(file);
 }
-// New showMnemonic function for Unsplash API
-
 async function showMnemonic(banglaWord) {
-    // This helper function might be different in study-session.js
-    // Ensure you use the correct way to get wordData in each file.
-    // For dictionary.js:
     const wordData = getWordData(banglaWord); 
-    // For study-session.js:
-    // const wordData = StudyApp.data.dictionary[banglaWord];
 
     if (!wordData || !wordData.en) {
         alert('No English translation available to search for a mnemonic for this word.');
         return;
     }
     
-    // This part is different for each file
-    // For dictionary.js:
     const modal = App.elements.mnemonicModal;
-    // For study-session.js:
-    // const modal = StudyApp.elements.mnemonicModal;
-
     const modalBody = modal.querySelector('#mnemonic-modal-body');
     modal.style.display = 'flex';
     modalBody.innerHTML = '<p class="image-loading-text">Searching for a visual mnemonic...</p>';
@@ -1307,7 +1267,6 @@ async function showMnemonic(banglaWord) {
     const japaneseWord = wordData.meaning;
 
     try {
-        // Call your new, secure Unsplash function
         const response = await fetch(`/.netlify/functions/get-unsplash-image?query=${encodeURIComponent(englishWord)}`);
 
         if (!response.ok) {
@@ -1318,7 +1277,6 @@ async function showMnemonic(banglaWord) {
         const data = await response.json();
         let imageHtml = `<p class="image-loading-text">No image found for "${englishWord}".</p>`;
         
-        // --- Unsplash response format is different from Pexels ---
         if (data.results && data.results.length > 0) {
             const photo = data.results[0];
             imageHtml = `
@@ -1330,7 +1288,6 @@ async function showMnemonic(banglaWord) {
                 </a>
             `;
         }
-        // --- End of format difference ---
 
         modalBody.innerHTML = `
             <div class="mnemonic-word-info">

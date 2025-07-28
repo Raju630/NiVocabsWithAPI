@@ -1,6 +1,6 @@
 // service-worker.js (Final Version)
 
-const CACHE_NAME = 'n5-dictionary-cache-v1.2'; // Cache version updated to trigger refresh
+const CACHE_NAME = 'n5-dictionary-cache-v1.1.1'; // Cache version updated to trigger refresh
 const urlsToCache = [
   '/',
   '/index.html',

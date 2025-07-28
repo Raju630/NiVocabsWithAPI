@@ -19,30 +19,27 @@ function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// The 'event' object is actually a standard Request object in Edge Functions
 export default async function handler(request) {
   try {
     const db = await connectToDatabase();
     const collection = db.collection("words");
 
-    // --- FIX: Get query params from the request URL ---
     const url = new URL(request.url);
     const lesson = url.searchParams.get('lesson');
     const search = url.searchParams.get('search');
     const list = url.searchParams.get('list');
-    // --- END FIX ---
+    // --- FIX: Corrected typo from searchparams to searchParams ---
+    const category = url.searchParams.get('category');
     
     let query = {};
     let results = [];
 
     if (list) {
-      // Note: decodeURIComponent is not needed here, url.searchParams.get() already decodes.
       const wordList = list.split(',').map(word => word.trim());
       query = { bangla: { $in: wordList } };
       results = await collection.find(query).toArray();
 
     } else if (search) {
-      // Note: decodeURIComponent is not needed here.
       const searchRegex = new RegExp(escapeRegExp(search), 'i'); 
       query = { 
         $or: [
@@ -53,12 +50,14 @@ export default async function handler(request) {
       };
       results = await collection.find(query).sort({ bangla: 1 }).toArray();
     
-    } else if (lesson) {
-      query = { lesson: parseInt(lesson, 10) };
+    } else { 
+      if (lesson) {
+        query.lesson = parseInt(lesson, 10);
+      }
+      if (category) {
+        query.category = { $regex: `^${escapeRegExp(category)}$`, $options: 'i' };
+      }
       results = await collection.find(query).sort({ bangla: 1 }).toArray();
-    
-    } else { // This is the default branch for no parameters
-      results = await collection.find({}).sort({ bangla: 1 }).toArray();
     }
     
     const dictionaryObject = results.reduce((obj, item) => {

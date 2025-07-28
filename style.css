@@ -1628,3 +1628,43 @@ select#voice-select:focus {
     color: white;
     border-color: #a7c5ff;
 }
+
+.dictionary-filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+#category-filter {
+    width: auto;
+    min-width: 180px;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: var(--text-color);
+}
+#category-filter option {
+    background-color: #1e293b;
+    color: var(--text-color);
+}
+
+#search-input {
+    width: 100%;
+    max-width: 300px;
+}
+
+@media (max-width: 768px) {
+    .filter-controls {
+        flex-direction: column;
+        width: 100%;
+    }
+    #search-input, #category-filter {
+        width: 50%;
+        padding: 12px 10px;
+    }
+    #category-filter {
+        width: auto;
+        min-width: 100px;
+        padding: 12px 10px;
+    }
+}
