@@ -23,6 +23,7 @@ const App = {
         renderBatchSize: 30,
         currentPage: 0,
         targetParticles: ['は', 'が', 'を', 'に', 'へ', 'で', 'と', 'も', 'の', 'か', 'や'],
+        practiceMode: 'bn-jp',
     },
     elements: {
         appContainer: document.getElementById('dictionary-app-container'),
@@ -450,8 +451,30 @@ function renderDictionaryTab() {
     container.innerHTML = `
         <div class="section-box">
             <h3 style="text-align:center;">Random Word Practice</h3>
-            <div class="random-word-container"><div class="flashcard-container"><div id="flashcard-content" class="flashcard-content"><p>Get a random word from the current lesson set, or select words below for a focused study session.</p></div></div><div class="random-word-controls"><button id="get-random-btn" class="control-button">Get Random Word</button><button id="show-meaning-btn" class="control-button" style="display:none;">Show Meaning</button></div></div>
+            <div class="random-word-container">
+                <div class="flashcard-container">
+                    <div id="flashcard-content" class="flashcard-content">
+                        <p>Get a random word from the current lesson set, or select words below for a focused study session.</p>
+                    </div>
+                </div>
+
+                <!-- --- NEW: Practice Mode Toggle Switch --- -->
+                <div class="practice-mode-toggle">
+                    <span>Bangla → JP</span>
+                    <label class="switch">
+                        <input type="checkbox" id="practice-mode-checkbox">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Japanese → BN</span>
+                </div>
+
+                <div class="random-word-controls">
+                    <button id="get-random-btn" class="control-button">Get Random Word</button>
+                    <button id="show-meaning-btn" class="control-button" style="display:none;">Show Meaning</button>
+                </div>
+            </div>
         </div>
+        <!-- ... (rest of the dictionary tab HTML is unchanged) ... -->
         <div class="section-box">
             <h3>Add New Word</h3>
             <div class="add-word-form">
@@ -485,8 +508,6 @@ function renderDictionaryTab() {
         </div>
         <div class="section-box" id="word-list-section">
             <div class="study-list-controls"><button id="toggle-select-mode-btn" class="control-button">Select for Study</button><div id="selection-actions" style="display: none;"><button id="start-study-btn" class="add-button">Start Practice (<span id="selected-count">0</span>)</button><button id="clear-selection-btn" class="control-button">Clear</button></div></div>
-            
-            <!-- --- MODIFIED: Simplified filter layout --- -->
             <div class="dictionary-filters">
                 <select id="category-filter">
                     <option value="">All Categories</option>
@@ -502,7 +523,6 @@ function renderDictionaryTab() {
                 </select>
                 <input type="search" id="search-input" placeholder="Search all words...">
             </div>
-
             <div class="word-list-container" id="word-list-container"></div>
         </div>
     `;
@@ -512,11 +532,20 @@ function renderDictionaryTab() {
     document.getElementById('toggle-select-mode-btn').addEventListener('click', toggleSelectionMode);
     document.getElementById('start-study-btn').addEventListener('click', startStudySession);
     document.getElementById('clear-selection-btn').addEventListener('click', clearSelection);
-    
     document.getElementById('search-input').addEventListener('input', debounce(resetAndLoadWords));
     document.getElementById('category-filter').addEventListener('change', resetAndLoadWords);
-
     document.getElementById('word-list-container').addEventListener('click', handleWordCardClick);
+
+    // --- NEW: Event listener for the toggle switch ---
+    const practiceModeCheckbox = document.getElementById('practice-mode-checkbox');
+    practiceModeCheckbox.addEventListener('change', () => {
+        App.config.practiceMode = practiceModeCheckbox.checked ? 'jp-bn' : 'bn-jp';
+        // Reset the practice state when mode is changed
+        App.config.mainPracticeList = [];
+        document.getElementById('flashcard-content').innerHTML = '<p>Mode changed. Click the button to start.</p>';
+        document.getElementById('get-random-btn').textContent = 'Get Random Word';
+        document.getElementById('show-meaning-btn').style.display = 'none';
+    });
 }
 function renderWeakWordsTab() {
     const container = document.getElementById('weak-words-tab');
@@ -922,7 +951,16 @@ function getRandomWord() {
     }
     App.config.currentRandomWord = App.config.mainPracticeList.pop();
     const content = document.getElementById('flashcard-content');
-    content.innerHTML = `<div class="word-display">${App.config.currentRandomWord}</div>`;
+    
+    // --- MODIFIED: Display question based on practice mode ---
+    let questionText = App.config.currentRandomWord; // Default is Bangla
+    if (App.config.practiceMode === 'jp-bn') {
+        const wordData = getWordData(App.config.currentRandomWord);
+        questionText = wordData.meaning;
+    }
+    content.innerHTML = `<div class="word-display">${questionText}</div>`;
+    // --- END MODIFICATION ---
+
     const btn = document.getElementById('show-meaning-btn');
     btn.textContent = 'Show Meaning';
     btn.style.display = 'inline-block';
@@ -956,19 +994,37 @@ function toggleRandomMeaning() {
     if (!word) return;
     const btn = document.getElementById('show-meaning-btn');
     const cardContent = document.getElementById('flashcard-content');
+    
+    // --- MODIFIED: Logic to show correct answer based on mode ---
     if (btn.textContent === 'Show Meaning') {
-        const { meaning } = getWordData(word);
-        cardContent.innerHTML = `<div class="meaning-display">${meaning}<span class="speak-icon" onclick="speakJapanese('${meaning}')">🔊</span></div>`;
+        const wordData = getWordData(word);
+        let answerText = wordData.meaning; // Default answer is Japanese
+        let questionText = word; // Default question is Bangla
+
+        if (App.config.practiceMode === 'jp-bn') {
+            answerText = word; // Answer is Bangla
+            questionText = wordData.meaning; // Question is Japanese
+        }
+
+        cardContent.innerHTML = `<div class="meaning-display">${answerText}<span class="speak-icon" onclick="speakJapanese('${wordData.meaning}')">🔊</span></div>`;
         btn.textContent = 'Show Word';
+
+        // Add to weak words only when the answer is revealed
         if (!App.data.weakWords.includes(word)) {
             App.data.weakWords.push(word);
             saveUserData();
             renderWeakWordsList();
         }
     } else {
-        cardContent.innerHTML = `<div class="word-display">${word}</div>`;
+        // This part also needs to know the mode to show the correct question again
+        let questionText = word;
+        if (App.config.practiceMode === 'jp-bn') {
+            questionText = getWordData(word).meaning;
+        }
+        cardContent.innerHTML = `<div class="word-display">${questionText}</div>`;
         btn.textContent = 'Show Meaning';
     }
+    // --- END MODIFICATION ---
 }
 function startQuiz(quizType) {
     const wordPool = getWordPool();
