@@ -1,3 +1,5 @@
+// dictionary.js
+
 const App = {
     data: {
         serverDictionary: {}, 
@@ -852,7 +854,6 @@ function attachAppEventListeners() {
         if (e.target.matches('.nav-tab')) {
             const tabName = e.target.dataset.tab;
             if (tabName === 'settings') {
-                // Call our new async function to render the settings
                 renderSettingsTab(); 
             }
             if (tabName !== 'dictionary') {
@@ -860,6 +861,11 @@ function attachAppEventListeners() {
             } else {
                 window.addEventListener('scroll', handleInfiniteScroll);
             }
+            // --- FIX: Re-render weak words list every time the tab is selected ---
+            if (tabName === 'weak-words') {
+                renderWeakWordsList();
+            }
+            // --- END FIX ---
             if (App.config.currentQuiz.type && tabName !== 'quiz') {
                 App.config.quizScore = 0;
                 App.config.currentQuiz = {};

@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
         lessonsDropdownMenu.innerHTML = '';
         AppConfig.lessons.forEach(lesson => {
             const link = document.createElement('a');
-            link.href = `/lesson?id=${lesson.id}`;
+            // --- FIX: Added .html to the href ---
+            link.href = `/lesson.html?id=${lesson.id}`;
             link.textContent = `Lesson ${lesson.id}: ${lesson.title}`;
             lessonsDropdownMenu.appendChild(link);
         });

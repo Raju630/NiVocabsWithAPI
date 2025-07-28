@@ -1,6 +1,6 @@
 // service-worker.js (Final Version)
 
-const CACHE_NAME = 'n5-dictionary-cache-v1.0'; 
+const CACHE_NAME = 'n5-dictionary-cache-v1.2'; // Cache version updated to trigger refresh
 const urlsToCache = [
   '/',
   '/index.html',
@@ -15,6 +15,11 @@ const urlsToCache = [
   '/icon.png',
   '/raju.png',
   '/popup-sound.mp3',
+  '/html.png',
+  '/css.png',
+  '/js.png',
+  '/netlify.png',
+  '/mongodb.png'
 ];
 
 // Install the service worker and cache files
@@ -33,28 +38,7 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
 
-  // --- Strategy 1: Network-First for our data file ---
-  if (requestUrl.pathname === '/data/full_data.json') {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(cache => {
-        return fetch(event.request)
-          .then(networkResponse => {
-            // Network successful: update cache and return fresh response
-            console.log(`Service Worker: Fetched ${requestUrl.pathname} from network and updated cache.`);
-            cache.put(event.request, networkResponse.clone());
-            return networkResponse;
-          })
-          .catch(() => {
-            // Network failed (offline): serve from cache as a fallback
-            console.log(`Service Worker: Network failed for ${requestUrl.pathname}. Serving from cache.`);
-            return cache.match(event.request);
-          });
-      })
-    );
-    return; // Stop here for this strategy
-  }
-
-  // --- Strategy 2: Cache-First for the app shell (HTML, CSS, JS, etc.) ---
+  // --- Strategy: Cache-First for the app shell (HTML, CSS, JS, etc.) ---
   event.respondWith(
     caches.match(event.request)
       .then(cachedResponse => {
@@ -63,7 +47,7 @@ self.addEventListener('fetch', event => {
         }
 
         // Special handling for lesson pages with URL parameters
-        if (requestUrl.origin === self.location.origin && requestUrl.pathname === '/lesson.html') {
+        if (requestUrl.origin === self.location.origin && requestUrl.pathname === '/lesson') {
           return caches.match('/lesson.html');
         }
 
@@ -77,6 +61,7 @@ self.addEventListener('message', event => {
     self.skipWaiting();
   }
 });
+
 // Clean up old caches and take control
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
