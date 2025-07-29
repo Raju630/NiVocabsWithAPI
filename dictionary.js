@@ -472,12 +472,12 @@ function renderDictionaryTab() {
 
                 <!-- --- NEW: Practice Mode Toggle Switch --- -->
                 <div class="practice-mode-toggle">
-                    <span>Bangla → JP</span>
+                    <span>বাংলা → 日本語</span>
                     <label class="switch">
                         <input type="checkbox" id="practice-mode-checkbox">
                         <span class="slider"></span>
                     </label>
-                    <span>Japanese → BN</span>
+                    <span>日本語 → বাংলা</span>
                 </div>
 
                 <div class="random-word-controls">
