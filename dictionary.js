@@ -24,6 +24,8 @@ const App = {
         currentPage: 0,
         targetParticles: ['は', 'が', 'を', 'に', 'へ', 'で', 'と', 'も', 'の', 'か', 'や'],
         practiceMode: 'bn-jp',
+        autoRevealEnabled: false,
+        autoRevealDelay: 3
     },
     elements: {
         appContainer: document.getElementById('dictionary-app-container'),
@@ -32,7 +34,7 @@ const App = {
         mnemonicModal: document.getElementById('mnemonic-modal')
     },
 };
-
+let autoRevealTimer = null;
 function loadUserData() {
     const userDataJSON = localStorage.getItem('N5_USER_DATA');
     if (userDataJSON) {
@@ -40,6 +42,8 @@ function loadUserData() {
         App.data.userWords = userData.userWords || {};
         App.data.deletedWords = userData.deletedWords || [];
         App.data.weakWords = userData.weakWords || [];
+        App.config.autoRevealEnabled = userData.autoRevealEnabled === true; // Ensure boolean
+        App.config.autoRevealDelay = userData.autoRevealDelay || 3;
     }
 }
 
@@ -47,7 +51,10 @@ function saveUserData() {
     const userData = {
         userWords: App.data.userWords,
         deletedWords: App.data.deletedWords,
-        weakWords: App.data.weakWords
+        weakWords: App.data.weakWords,
+        // --- NEW: Save practice settings ---
+        autoRevealEnabled: App.config.autoRevealEnabled,
+        autoRevealDelay: App.config.autoRevealDelay
     };
     localStorage.setItem('N5_USER_DATA', JSON.stringify(userData));
 }
@@ -66,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     App.config.lessonId = urlParams.get('id');
     renderApp();
-    resetAndLoadWords(); // Initial load
+    resetAndLoadWords();
 });
 function renderSkeletons(container) {
     container.innerHTML = '';
@@ -541,6 +548,7 @@ function renderDictionaryTab() {
     practiceModeCheckbox.addEventListener('change', () => {
         App.config.practiceMode = practiceModeCheckbox.checked ? 'jp-bn' : 'bn-jp';
         // Reset the practice state when mode is changed
+        clearTimeout(autoRevealTimer);
         App.config.mainPracticeList = [];
         document.getElementById('flashcard-content').innerHTML = '<p>Mode changed. Click the button to start.</p>';
         document.getElementById('get-random-btn').textContent = 'Get Random Word';
@@ -841,6 +849,24 @@ async function renderSettingsTab() {
 
     settingsContainer.innerHTML = `
         <div class="section-box">
+            <h3>Practice Settings</h3>
+            <div class="settings-auto-reveal">
+                <label for="auto-reveal-toggle">Automatically Show Meaning</label>
+                <label class="switch">
+                    <input type="checkbox" id="auto-reveal-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="settings-auto-reveal slider-control">
+                <label for="auto-reveal-slider">Reveal After</label>
+                <div class="slider-container">
+                    <input type="range" min="1" max="10" value="${App.config.autoRevealDelay}" class="slider-input" id="auto-reveal-slider">
+                    <span id="auto-reveal-value">${App.config.autoRevealDelay}s</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-box">
             <h3>Voice & Sound</h3>
             <div class="input-group">
                 <label for="voice-select">Speech Voice</label>
@@ -869,7 +895,27 @@ async function renderSettingsTab() {
             <button id="reset-btn" class="control-button" style="background-color: #d9534f;">Reset All Data</button>
         </div>
     `;
+    const autoRevealToggle = document.getElementById('auto-reveal-toggle');
+    const autoRevealSlider = document.getElementById('auto-reveal-slider');
+    const autoRevealValue = document.getElementById('auto-reveal-value');
+    const sliderControl = document.querySelector('.slider-control');
 
+    // Set initial state from loaded config
+    autoRevealToggle.checked = App.config.autoRevealEnabled;
+    sliderControl.style.display = App.config.autoRevealEnabled ? 'flex' : 'none';
+
+    autoRevealToggle.addEventListener('change', () => {
+        App.config.autoRevealEnabled = autoRevealToggle.checked;
+        sliderControl.style.display = App.config.autoRevealEnabled ? 'flex' : 'none';
+        saveUserData();
+    });
+
+    autoRevealSlider.addEventListener('input', () => {
+        const delay = autoRevealSlider.value;
+        App.config.autoRevealDelay = delay;
+        autoRevealValue.textContent = `${delay}s`;
+        saveUserData();
+    });
     const voiceSelect = document.getElementById('voice-select');
     
     voiceSelect.addEventListener('change', () => {
@@ -891,6 +937,9 @@ function attachAppEventListeners() {
     App.elements.appContainer.querySelector('.nav-tabs').addEventListener('click', (e) => {
         if (e.target.matches('.nav-tab')) {
             const tabName = e.target.dataset.tab;
+            if (tabName !== 'dictionary') {
+                clearTimeout(autoRevealTimer);
+            }
             if (tabName === 'settings') {
                 renderSettingsTab(); 
             }
@@ -938,6 +987,7 @@ function renderWeakWordsList() {
     });
 }
 function getRandomWord() {
+    clearTimeout(autoRevealTimer);
     if (App.config.mainPracticeList.length === 0) {
         let wordPool = getWordPool();
         if (wordPool.length === 0) {
@@ -967,6 +1017,14 @@ function getRandomWord() {
     if (App.config.mainPracticeList.length === 0) {
         document.getElementById('get-random-btn').textContent = 'Start Over';
     }
+    if (App.config.autoRevealEnabled) {
+        autoRevealTimer = setTimeout(() => {
+            // Only toggle if the meaning isn't already shown
+            if (btn.textContent === 'Show Meaning') {
+                toggleRandomMeaning();
+            }
+        }, App.config.autoRevealDelay * 1000);
+    }
 }
 function getWeakWordForPractice() {
     if (App.config.weakPracticeList.length === 0) {
@@ -990,6 +1048,7 @@ function getWeakWordForPractice() {
     }
 }
 function toggleRandomMeaning() {
+    clearTimeout(autoRevealTimer);
     const word = App.config.currentRandomWord;
     if (!word) return;
     const btn = document.getElementById('show-meaning-btn');

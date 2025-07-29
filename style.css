@@ -1737,3 +1737,65 @@ input:checked + .slider:before {
     -ms-transform: translateX(24px);
     transform: translateX(24px);
 }
+
+/* --- Add these styles to the end of style.css --- */
+
+.settings-auto-reveal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.settings-auto-reveal:last-child {
+    border-bottom: none;
+}
+
+.settings-auto-reveal label {
+    font-size: 1.1em;
+    color: var(--text-color);
+}
+
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.slider-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 150px;
+    height: 8px;
+    background: rgba(0,0,0,0.3);
+    outline: none;
+    border-radius: 5px;
+}
+
+.slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--primary-color);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid var(--background-image);
+}
+
+.slider-input::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--primary-color);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid var(--background-image);
+}
+
+#auto-reveal-value {
+    font-weight: bold;
+    color: var(--secondary-color);
+    min-width: 30px;
+    text-align: right;
+}
