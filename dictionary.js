@@ -853,7 +853,7 @@ async function renderSettingsTab() {
     }
 
     settingsContainer.innerHTML = `
-         <div class="section-box">
+          <div class="section-box">
             <h3>Practice Settings</h3>
             <div class="settings-auto-reveal">
                 <label for="auto-reveal-toggle">Automatically Show Meaning</label>
@@ -862,8 +862,6 @@ async function renderSettingsTab() {
                     <span class="slider"></span>
                 </label>
             </div>
-
-            <!-- --- NEW: Sub-setting for preventing weak words --- -->
             <div class="sub-setting" id="prevent-weak-container">
                 <label for="prevent-weak-toggle">Don't mark auto-revealed as weak</label>
                 <label class="switch">
@@ -871,7 +869,6 @@ async function renderSettingsTab() {
                     <span class="slider"></span>
                 </label>
             </div>
-
             <div class="settings-auto-reveal slider-control">
                 <label for="auto-reveal-slider">Reveal After</label>
                 <div class="slider-container">
@@ -919,6 +916,7 @@ async function renderSettingsTab() {
     // Set initial states from loaded config
     autoRevealToggle.checked = App.config.autoRevealEnabled;
     preventWeakToggle.checked = App.config.preventAutoWeakWords;
+    preventWeakToggle.disabled = !App.config.autoRevealEnabled; // Disable if main toggle is off
     sliderControl.style.display = App.config.autoRevealEnabled ? 'flex' : 'none';
     preventWeakContainer.style.display = App.config.autoRevealEnabled ? 'flex' : 'none';
 
@@ -926,6 +924,14 @@ async function renderSettingsTab() {
         App.config.autoRevealEnabled = autoRevealToggle.checked;
         sliderControl.style.display = App.config.autoRevealEnabled ? 'flex' : 'none';
         preventWeakContainer.style.display = App.config.autoRevealEnabled ? 'flex' : 'none';
+        
+        // --- FIX: Disable and uncheck the sub-setting when the main setting is off ---
+        preventWeakToggle.disabled = !App.config.autoRevealEnabled;
+        if (!App.config.autoRevealEnabled) {
+            preventWeakToggle.checked = false;
+            App.config.preventAutoWeakWords = false;
+        }
+        
         saveUserData();
     });
 
@@ -934,7 +940,6 @@ async function renderSettingsTab() {
         App.config.autoRevealDelay = delay;
         autoRevealValue.textContent = `${delay}s`;
     });
-    // Save on mouseup/touchend to avoid excessive writes
     autoRevealSlider.addEventListener('mouseup', saveUserData);
     autoRevealSlider.addEventListener('touchend', saveUserData);
 
@@ -1046,8 +1051,7 @@ function getRandomWord() {
     if (App.config.autoRevealEnabled) {
         autoRevealTimer = setTimeout(() => {
             if (btn.textContent === 'Show Meaning') {
-                // --- MODIFIED: Pass a flag to indicate this is an automatic reveal ---
-                toggleRandomMeaning(true);
+                toggleRandomMeaning(true); // isAutoReveal = true
             }
         }, App.config.autoRevealDelay * 1000);
     }
@@ -1091,13 +1095,15 @@ function toggleRandomMeaning(isAutoReveal = false) {
         cardContent.innerHTML = `<div class="meaning-display">${answerText}<span class="speak-icon" onclick="speakJapanese('${wordData.meaning}')">🔊</span></div>`;
         btn.textContent = 'Show Word';
 
-        // --- MODIFIED: Core logic to decide whether to add to weak words ---
+        // --- FIX: Corrected and simplified logic ---
+        // This block is only entered when the meaning is revealed.
+        // We check if the word is already weak.
         if (!App.data.weakWords.includes(word)) {
-            // Add if:
-            // 1. It was a manual click (isAutoReveal is false)
+            // A word becomes weak IF:
+            // 1. It was revealed by a manual click (isAutoReveal is false).
             // OR
-            // 2. It was an auto-reveal AND the 'prevent' setting is OFF
-            if (!isAutoReveal || !App.config.preventAutoWeakWords) {
+            // 2. It was auto-revealed AND the "prevent" setting is OFF.
+            if (!isAutoReveal || (isAutoReveal && !App.config.preventAutoWeakWords)) {
                 App.data.weakWords.push(word);
                 saveUserData();
                 renderWeakWordsList();
@@ -1110,6 +1116,15 @@ function toggleRandomMeaning(isAutoReveal = false) {
         }
         cardContent.innerHTML = `<div class="word-display">${questionText}</div>`;
         btn.textContent = 'Show Meaning';
+        
+        // When flipping back to the question, restart the timer if auto-reveal is on
+        if (App.config.autoRevealEnabled) {
+            autoRevealTimer = setTimeout(() => {
+                if (btn.textContent === 'Show Meaning') {
+                    toggleRandomMeaning(true); // isAutoReveal = true
+                }
+            }, App.config.autoRevealDelay * 1000);
+        }
     }
 }
 function startQuiz(quizType) {
