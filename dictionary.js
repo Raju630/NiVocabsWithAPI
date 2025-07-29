@@ -1,5 +1,3 @@
-// dictionary.js
-
 const App = {
     data: {
         serverDictionary: {}, 
@@ -25,7 +23,9 @@ const App = {
         targetParticles: ['は', 'が', 'を', 'に', 'へ', 'で', 'と', 'も', 'の', 'か', 'や'],
         practiceMode: 'bn-jp',
         autoRevealEnabled: false,
-        autoRevealDelay: 3
+        autoRevealDelay: 3,
+        // --- NEW: Setting to prevent auto-revealed words from being marked as weak ---
+        preventAutoWeakWords: false
     },
     elements: {
         appContainer: document.getElementById('dictionary-app-container'),
@@ -34,7 +34,9 @@ const App = {
         mnemonicModal: document.getElementById('mnemonic-modal')
     },
 };
+
 let autoRevealTimer = null;
+
 function loadUserData() {
     const userDataJSON = localStorage.getItem('N5_USER_DATA');
     if (userDataJSON) {
@@ -42,8 +44,10 @@ function loadUserData() {
         App.data.userWords = userData.userWords || {};
         App.data.deletedWords = userData.deletedWords || [];
         App.data.weakWords = userData.weakWords || [];
-        App.config.autoRevealEnabled = userData.autoRevealEnabled === true; // Ensure boolean
+        App.config.autoRevealEnabled = userData.autoRevealEnabled === true;
         App.config.autoRevealDelay = userData.autoRevealDelay || 3;
+        // --- NEW: Load the new setting ---
+        App.config.preventAutoWeakWords = userData.preventAutoWeakWords === true;
     }
 }
 
@@ -52,9 +56,10 @@ function saveUserData() {
         userWords: App.data.userWords,
         deletedWords: App.data.deletedWords,
         weakWords: App.data.weakWords,
-        // --- NEW: Save practice settings ---
         autoRevealEnabled: App.config.autoRevealEnabled,
-        autoRevealDelay: App.config.autoRevealDelay
+        autoRevealDelay: App.config.autoRevealDelay,
+        // --- NEW: Save the new setting ---
+        preventAutoWeakWords: App.config.preventAutoWeakWords
     };
     localStorage.setItem('N5_USER_DATA', JSON.stringify(userData));
 }
@@ -848,7 +853,7 @@ async function renderSettingsTab() {
     }
 
     settingsContainer.innerHTML = `
-        <div class="section-box">
+         <div class="section-box">
             <h3>Practice Settings</h3>
             <div class="settings-auto-reveal">
                 <label for="auto-reveal-toggle">Automatically Show Meaning</label>
@@ -857,6 +862,16 @@ async function renderSettingsTab() {
                     <span class="slider"></span>
                 </label>
             </div>
+
+            <!-- --- NEW: Sub-setting for preventing weak words --- -->
+            <div class="sub-setting" id="prevent-weak-container">
+                <label for="prevent-weak-toggle">Don't mark auto-revealed as weak</label>
+                <label class="switch">
+                    <input type="checkbox" id="prevent-weak-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
             <div class="settings-auto-reveal slider-control">
                 <label for="auto-reveal-slider">Reveal After</label>
                 <div class="slider-container">
@@ -865,7 +880,6 @@ async function renderSettingsTab() {
                 </div>
             </div>
         </div>
-
         <div class="section-box">
             <h3>Voice & Sound</h3>
             <div class="input-group">
@@ -899,14 +913,19 @@ async function renderSettingsTab() {
     const autoRevealSlider = document.getElementById('auto-reveal-slider');
     const autoRevealValue = document.getElementById('auto-reveal-value');
     const sliderControl = document.querySelector('.slider-control');
+    const preventWeakContainer = document.getElementById('prevent-weak-container');
+    const preventWeakToggle = document.getElementById('prevent-weak-toggle');
 
-    // Set initial state from loaded config
+    // Set initial states from loaded config
     autoRevealToggle.checked = App.config.autoRevealEnabled;
+    preventWeakToggle.checked = App.config.preventAutoWeakWords;
     sliderControl.style.display = App.config.autoRevealEnabled ? 'flex' : 'none';
+    preventWeakContainer.style.display = App.config.autoRevealEnabled ? 'flex' : 'none';
 
     autoRevealToggle.addEventListener('change', () => {
         App.config.autoRevealEnabled = autoRevealToggle.checked;
         sliderControl.style.display = App.config.autoRevealEnabled ? 'flex' : 'none';
+        preventWeakContainer.style.display = App.config.autoRevealEnabled ? 'flex' : 'none';
         saveUserData();
     });
 
@@ -914,6 +933,13 @@ async function renderSettingsTab() {
         const delay = autoRevealSlider.value;
         App.config.autoRevealDelay = delay;
         autoRevealValue.textContent = `${delay}s`;
+    });
+    // Save on mouseup/touchend to avoid excessive writes
+    autoRevealSlider.addEventListener('mouseup', saveUserData);
+    autoRevealSlider.addEventListener('touchend', saveUserData);
+
+    preventWeakToggle.addEventListener('change', () => {
+        App.config.preventAutoWeakWords = preventWeakToggle.checked;
         saveUserData();
     });
     const voiceSelect = document.getElementById('voice-select');
@@ -988,6 +1014,7 @@ function renderWeakWordsList() {
 }
 function getRandomWord() {
     clearTimeout(autoRevealTimer);
+
     if (App.config.mainPracticeList.length === 0) {
         let wordPool = getWordPool();
         if (wordPool.length === 0) {
@@ -1002,26 +1029,25 @@ function getRandomWord() {
     App.config.currentRandomWord = App.config.mainPracticeList.pop();
     const content = document.getElementById('flashcard-content');
     
-    // --- MODIFIED: Display question based on practice mode ---
-    let questionText = App.config.currentRandomWord; // Default is Bangla
+    let questionText = App.config.currentRandomWord;
     if (App.config.practiceMode === 'jp-bn') {
         const wordData = getWordData(App.config.currentRandomWord);
         questionText = wordData.meaning;
     }
     content.innerHTML = `<div class="word-display">${questionText}</div>`;
-    // --- END MODIFICATION ---
-
+    
     const btn = document.getElementById('show-meaning-btn');
     btn.textContent = 'Show Meaning';
     btn.style.display = 'inline-block';
     if (App.config.mainPracticeList.length === 0) {
         document.getElementById('get-random-btn').textContent = 'Start Over';
     }
+
     if (App.config.autoRevealEnabled) {
         autoRevealTimer = setTimeout(() => {
-            // Only toggle if the meaning isn't already shown
             if (btn.textContent === 'Show Meaning') {
-                toggleRandomMeaning();
+                // --- MODIFIED: Pass a flag to indicate this is an automatic reveal ---
+                toggleRandomMeaning(true);
             }
         }, App.config.autoRevealDelay * 1000);
     }
@@ -1047,35 +1073,37 @@ function getWeakWordForPractice() {
         document.getElementById('get-weak-word-btn').textContent = 'Start Over';
     }
 }
-function toggleRandomMeaning() {
+function toggleRandomMeaning(isAutoReveal = false) {
     clearTimeout(autoRevealTimer);
+
     const word = App.config.currentRandomWord;
     if (!word) return;
     const btn = document.getElementById('show-meaning-btn');
     const cardContent = document.getElementById('flashcard-content');
     
-    // --- MODIFIED: Logic to show correct answer based on mode ---
     if (btn.textContent === 'Show Meaning') {
         const wordData = getWordData(word);
-        let answerText = wordData.meaning; // Default answer is Japanese
-        let questionText = word; // Default question is Bangla
-
+        let answerText = wordData.meaning;
         if (App.config.practiceMode === 'jp-bn') {
-            answerText = word; // Answer is Bangla
-            questionText = wordData.meaning; // Question is Japanese
+            answerText = word;
         }
 
         cardContent.innerHTML = `<div class="meaning-display">${answerText}<span class="speak-icon" onclick="speakJapanese('${wordData.meaning}')">🔊</span></div>`;
         btn.textContent = 'Show Word';
 
-        // Add to weak words only when the answer is revealed
+        // --- MODIFIED: Core logic to decide whether to add to weak words ---
         if (!App.data.weakWords.includes(word)) {
-            App.data.weakWords.push(word);
-            saveUserData();
-            renderWeakWordsList();
+            // Add if:
+            // 1. It was a manual click (isAutoReveal is false)
+            // OR
+            // 2. It was an auto-reveal AND the 'prevent' setting is OFF
+            if (!isAutoReveal || !App.config.preventAutoWeakWords) {
+                App.data.weakWords.push(word);
+                saveUserData();
+                renderWeakWordsList();
+            }
         }
     } else {
-        // This part also needs to know the mode to show the correct question again
         let questionText = word;
         if (App.config.practiceMode === 'jp-bn') {
             questionText = getWordData(word).meaning;
@@ -1083,7 +1111,6 @@ function toggleRandomMeaning() {
         cardContent.innerHTML = `<div class="word-display">${questionText}</div>`;
         btn.textContent = 'Show Meaning';
     }
-    // --- END MODIFICATION ---
 }
 function startQuiz(quizType) {
     const wordPool = getWordPool();

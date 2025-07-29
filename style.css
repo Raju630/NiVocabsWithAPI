@@ -1799,3 +1799,23 @@ input:checked + .slider:before {
     min-width: 30px;
     text-align: right;
 }
+/* --- Add this to the end of your style.css file --- */
+
+.sub-setting {
+    display: flex; /* Changed to flex to align items nicely */
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 10px 25px; /* Indent to show it's a sub-option */
+    border-bottom: 1px solid var(--glass-border);
+    background-color: rgba(0,0,0,0.1); /* Slightly different background */
+}
+
+/* Hide it by default, JS will show it */
+.sub-setting {
+    display: none;
+}
+
+.sub-setting label {
+    font-size: 1em; /* Slightly smaller than main settings */
+    color: #ccc;
+}
