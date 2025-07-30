@@ -627,8 +627,10 @@ function startStudySession() {
         alert("Please select at least one word to start a practice session.");
         return;
     }
-    const encodedWords = encodeURIComponent(App.config.studyList.join(','));
+    // --- FIX: Join words with a pipe '|' instead of a comma ',' ---
+    const encodedWords = encodeURIComponent(App.config.studyList.join('|'));
     const studyUrl = `study.html?words=${encodedWords}`;
+    
     if (window.matchMedia('(display-mode: standalone)').matches) {
         window.location.href = studyUrl;
     } else {

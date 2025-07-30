@@ -1,4 +1,4 @@
-// study-session.js (With Skeleton Loader)
+// study-session.js (With Final Comma/Delimiter Bug Fix)
 
 const StudyApp = {
     data: {
@@ -16,11 +16,7 @@ const StudyApp = {
     }
 };
 
-// --- This is the main execution block that runs on page load ---
 document.addEventListener('DOMContentLoaded', async () => {
-
-    // --- THIS IS THE NEW PART ---
-    // Immediately render the skeleton layout. This replaces the "Loading..." text from study.html.
     const renderPageSkeleton = () => {
         const skeletonHTML = `
             <div class="skeleton-study-grid">
@@ -41,7 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         StudyApp.elements.container.innerHTML = skeletonHTML;
     };
     renderPageSkeleton();
-    // --- END OF NEW PART ---
 
     const urlParams = new URLSearchParams(window.location.search);
     const wordsParam = urlParams.get('words');
@@ -52,17 +47,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-        const studyWordsList = decodeURIComponent(wordsParam).split(',');
+        const studyWordsList = decodeURIComponent(wordsParam).split('|');
         StudyApp.data.studyWords = studyWordsList;
 
-        const wordsForApi = encodeURIComponent(studyWordsList.join(','));
+        // --- THE FIX IS ON THIS LINE ---
+        // We must join with the SAME delimiter ('|') that the backend expects.
+        const wordsForApi = encodeURIComponent(studyWordsList.join('|'));
         const response = await fetch(`/.netlify/functions/words?list=${wordsForApi}`);
 
         if (!response.ok) throw new Error('Failed to fetch dictionary data from the server.');
 
         StudyApp.data.dictionary = await response.json();
         
-        // This function will automatically replace the skeleton with the real content
         renderStudyPage();
 
     } catch (e) {
@@ -135,13 +131,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         StudyApp.elements.mnemonicModal.querySelector('.modal-close').addEventListener('click', closeMnemonicModal);
     }
 });
-
-// All helper functions below are unchanged.
-
-// This is the complete, final version of the function.
-// Replace the existing showExampleSentences function in BOTH dictionary.js and study-session.js with this one.
-
-// Replace the existing showExampleSentences function in study-session.js with this one.
 
 async function showExampleSentences(banglaWord) {
     const wordData = StudyApp.data.dictionary[banglaWord];
@@ -245,24 +234,18 @@ async function showExampleSentences(banglaWord) {
         }
     }
 }
-// FINAL speakJapanese function - Supports dynamic voice selection and testing.
 
 const audioCache = {};
 let currentAudio = null;
 
 async function speakJapanese(text, forceVoice = null) {
     if (!text || text.trim() === '') return;
-
     if (currentAudio) {
         currentAudio.pause();
         currentAudio.currentTime = 0;
     }
     window.speechSynthesis.cancel();
-
-    // Use the forced voice if provided (for testing), otherwise get from localStorage
     const voicePreference = forceVoice || localStorage.getItem('preferredVoice') || 'basic_default';
-
-    // If the preference is Google's voice, use the API
     if (voicePreference === 'google') {
         if (audioCache[text]) {
             currentAudio = audioCache[text];
@@ -284,94 +267,62 @@ async function speakJapanese(text, forceVoice = null) {
         } catch (error) {
             console.error('High-quality voice failed:', error);
             console.warn('Falling back to basic default voice.');
-            speakWithBasicVoice(text, 'basic_default'); // Fallback
+            speakWithBasicVoice(text, 'basic_default');
         }
     } else {
-        // Otherwise, use the browser's basic voice, passing the specific voice name
         speakWithBasicVoice(text, voicePreference);
     }
 }
 
-// This helper function can now select a specific voice by name
 function speakWithBasicVoice(text, voiceName) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ja-JP';
     utterance.rate = 0.7;
-
     const voices = window.speechSynthesis.getVoices();
     let selectedVoice = null;
-
     if (voiceName && voiceName !== 'basic_default') {
-        // Find the specific voice the user selected
         selectedVoice = voices.find(voice => voice.name === voiceName);
     } 
-    
     if (!selectedVoice) {
-        // Fallback to the first available Japanese voice if the specific one isn't found
-        // or if the setting is 'basic_default'
         selectedVoice = voices.find(voice => voice.lang === 'ja-JP');
     }
-    
     if (selectedVoice) {
         utterance.voice = selectedVoice;
     }
-
     window.speechSynthesis.speak(utterance);
 }
 
-// Keep the pre-loader
 window.speechSynthesis.onvoiceschanged = () => {
     window.speechSynthesis.getVoices();
 };
 
-window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
-};
-
-// Pre-load voices for the basic synthesizer. Some browsers need this.
-window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
-};
 function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function closeSentenceModal() { if (StudyApp.elements.sentenceModal) StudyApp.elements.sentenceModal.style.display = 'none'; }
-// In study-session.js, use this version of showMnemonic
 
 async function showMnemonic(banglaWord) {
-    // --- THIS IS THE FIX ---
-    // Get word data directly from the StudyApp object, NOT from getWordData()
     const wordData = StudyApp.data.dictionary[banglaWord];
-
     if (!wordData || !wordData.en) {
         alert('No English translation available to search for a mnemonic for this word.');
         return;
     }
-    
-    // Get the modal from the StudyApp object
     const modal = StudyApp.elements.mnemonicModal;
     if (!modal) {
         console.error("Mnemonic modal not found in StudyApp elements.");
         return;
     }
-
     const modalBody = modal.querySelector('#mnemonic-modal-body');
     modal.style.display = 'flex';
     modalBody.innerHTML = '<p class="image-loading-text">Searching for a visual mnemonic...</p>';
-
     const englishWord = wordData.en;
     const japaneseWord = wordData.meaning;
-
     try {
-        // This part is correct and calls your secure Unsplash function
         const response = await fetch(`/.netlify/functions/get-unsplash-image?query=${encodeURIComponent(englishWord)}`);
-
         if (!response.ok) {
             const err = await response.json();
             throw new Error(err.error || `API error: ${response.statusText}`);
         }
-        
         const data = await response.json();
         let imageHtml = `<p class="image-loading-text">No image found for "${englishWord}".</p>`;
-        
         if (data.results && data.results.length > 0) {
             const photo = data.results[0];
             imageHtml = `
@@ -383,7 +334,6 @@ async function showMnemonic(banglaWord) {
                 </a>
             `;
         }
-
         modalBody.innerHTML = `
             <div class="mnemonic-word-info">
                 <div class="mnemonic-bangla">${banglaWord}</div>

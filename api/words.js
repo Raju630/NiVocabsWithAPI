@@ -28,14 +28,14 @@ export default async function handler(request) {
     const lesson = url.searchParams.get('lesson');
     const search = url.searchParams.get('search');
     const list = url.searchParams.get('list');
-    // --- FIX: Corrected typo from searchparams to searchParams ---
     const category = url.searchParams.get('category');
     
     let query = {};
     let results = [];
 
     if (list) {
-      const wordList = list.split(',').map(word => word.trim());
+      // --- FIX: Split words by a pipe '|' instead of a comma ',' ---
+      const wordList = list.split('|').map(word => word.trim());
       query = { bangla: { $in: wordList } };
       results = await collection.find(query).toArray();
 
