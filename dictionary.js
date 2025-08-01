@@ -151,7 +151,7 @@ function renderSkeletons(container) {
             <div class="skeleton-line text"></div>
         </div>
     `;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 15; i++) {
         container.innerHTML += skeletonHTML;
     }
 }
