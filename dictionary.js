@@ -696,7 +696,7 @@ function renderWeakWordsList() {
     if (!container) return;
     container.innerHTML = '';
     document.getElementById('weak-words-count-title').textContent = `Weak Words (${App.data.weakWords.map(w => getWordData(w)).filter(Boolean).length})`;
-    if (App.data.weakWords.length === 0) { container.innerHTML = '<p style="text-align:center; color:#888;">Your weak words list is empty.</p>'; return; }
+    if (App.data.weakWords.map(w => getWordData(w)).filter(Boolean).length === 0) { container.innerHTML = '<p style="text-align:center; color:#888;">Your weak words list is empty.</p>'; return; }
     App.data.weakWords.forEach(word => { if (getWordData(word)) container.appendChild(createWordCard(word)); });
 }
 function getRandomWord() {
@@ -719,8 +719,8 @@ function getRandomWord() {
     if (App.config.autoRevealEnabled) { autoRevealTimer = setTimeout(() => { if (btn.textContent === 'Show Meaning') { toggleRandomMeaning(true); } }, App.config.autoRevealDelay * 1000); }
 }
 function getWeakWordForPractice() {
-    if (App.config.weakPracticeList.length === 0) {
-        if (App.data.weakWords.length === 0) { document.getElementById('weak-word-flashcard-content').innerHTML = '<p>No weak words to practice. Well done!</p>'; document.getElementById('show-weak-meaning-btn').style.display = 'none'; document.getElementById('get-weak-word-btn').textContent = 'Get Weak Word'; return; }
+    if (App.config.weakPracticeList.map(w => getWordData(w)).filter(Boolean).length === 0) {
+        if (App.data.weakWords.map(w => getWordData(w)).filter(Boolean).length === 0) { document.getElementById('weak-word-flashcard-content').innerHTML = '<p>No weak words to practice. Well done!</p>'; document.getElementById('show-weak-meaning-btn').style.display = 'none'; document.getElementById('get-weak-word-btn').textContent = 'Get Weak Word'; return; }
         App.config.weakPracticeList = [...App.data.weakWords].sort(() => Math.random() - 0.5);
         document.getElementById('get-weak-word-btn').textContent = 'Next Weak Word';
     }
