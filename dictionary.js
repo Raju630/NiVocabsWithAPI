@@ -695,7 +695,7 @@ function renderWeakWordsList() {
     const container = document.getElementById('weak-words-list');
     if (!container) return;
     container.innerHTML = '';
-    document.getElementById('weak-words-count-title').textContent = `Weak Words (${App.data.weakWords.length})`;
+    document.getElementById('weak-words-count-title').textContent = `Weak Words (${App.data.weakWords.map(w => getWordData(w)).filter(Boolean).length})`;
     if (App.data.weakWords.length === 0) { container.innerHTML = '<p style="text-align:center; color:#888;">Your weak words list is empty.</p>'; return; }
     App.data.weakWords.forEach(word => { if (getWordData(word)) container.appendChild(createWordCard(word)); });
 }
