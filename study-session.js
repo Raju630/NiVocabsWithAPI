@@ -148,7 +148,7 @@ async function showExampleSentences(banglaWord) {
     modal.style.display = 'flex';
 
     if (!japaneseSearchTerm || !englishSearchTerm) {
-        bodyEl.innerHTML = `<p style="color: #ffcdd2;">Cannot search for sentences. This word is missing a required Japanese or English translation.</p>`;
+        bodyEl.innerHTML = `<p style="color: var(--missing-color);">Cannot search for sentences. This word is missing a required Japanese or English translation.</p>`;
         return;
     }
     
@@ -168,7 +168,7 @@ async function showExampleSentences(banglaWord) {
             btn.style.backgroundColor = '#5cb85c';
         } catch (error) {
             btn.textContent = 'Submission Failed ❌';
-            btn.style.backgroundColor = '#d9534f';
+            btn.style.backgroundColor = 'var(--danger-color)';
             console.error('Sentence Request Error:', error);
             alert(`Error: ${error.message}`);
         }
@@ -189,7 +189,7 @@ async function showExampleSentences(banglaWord) {
         const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
 
         if (relevantSentences.length === 0) {
-            html = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
+            html = `<p style="color: var(--missing-color);">No example sentences found for "${japaneseSearchTerm}".</p>`;
         } else {
             relevantSentences.forEach((s, index) => {
                 const jpText = s.jp || '';
@@ -207,7 +207,7 @@ async function showExampleSentences(banglaWord) {
         if (relevantSentences.length < 3) {
             html += `
                 <div style="border-top: 1px solid var(--glass-border); margin-top: 20px; padding-top: 20px; text-align: center;">
-                    <p style="color: #ccc;">Want to see more examples for this word?</p>
+                    <p style="color: var(--text-color-light);">Want to see more examples for this word?</p>
                     <button id="request-sentence-btn" class="add-button" style="margin-top: 10px;">Request More Sentences</button>
                 </div>
             `;
@@ -230,7 +230,7 @@ async function showExampleSentences(banglaWord) {
     } catch (error) {
         console.error("Error fetching sentences:", error);
         if (bodyEl) {
-            bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences: ${error.message}</p>`;
+            bodyEl.innerHTML = `<p style="color: var(--missing-color);">Could not load sentences: ${error.message}</p>`;
         }
     }
 }

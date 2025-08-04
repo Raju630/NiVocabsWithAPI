@@ -203,7 +203,7 @@ async function fetchAndRenderWords() {
         const wordKeys = Object.keys(App.data.liveDictionary).sort();
         container.innerHTML = '';
         if (wordKeys.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#888;">No words found.</p>';
+            container.innerHTML = '<p style="text-align:center; color:var(--text-color-ash-dark);">No words found.</p>';
             return;
         }
         App.config.allWordsForView = wordKeys;
@@ -212,7 +212,7 @@ async function fetchAndRenderWords() {
         window.addEventListener('scroll', handleInfiniteScroll);
     } catch (error) {
         console.error("Failed to fetch words:", error);
-        container.innerHTML = `<p style="text-align:center; color:#ff8a80;">Error: Could not load dictionary data. ${error.message}</p>`;
+        container.innerHTML = `<p style="text-align:center; color:var(--danger-color);">Error: Could not load dictionary data. ${error.message}</p>`;
     }
 }
 
@@ -224,7 +224,7 @@ function renderNextBatch() {
     const endIndex = startIndex + renderBatchSize;
     const batchToRender = allWordsForView.slice(startIndex, endIndex);
     if (batchToRender.length === 0 && currentPage === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#888;">No words found.</p>';
+        container.innerHTML = '<p style="text-align:center; color:var(--text-color-ash-dark);">No words found.</p>';
         return;
     }
     batchToRender.forEach(word => {
@@ -368,7 +368,7 @@ async function showExampleSentences(banglaWord) {
     wordEl.textContent = japaneseSearchTerm;
     modal.style.display = 'flex';
     if (!japaneseSearchTerm || !englishSearchTerm) {
-        bodyEl.innerHTML = `<p style="color: #ffcdd2;">Cannot search for sentences. This word is missing a required Japanese or English translation.</p>`;
+        bodyEl.innerHTML = `<p style="color: var(--missing-color);">Cannot search for sentences. This word is missing a required Japanese or English translation.</p>`;
         return;
     }
     const submitSentenceRequest = async (fullWordObject) => {
@@ -383,7 +383,7 @@ async function showExampleSentences(banglaWord) {
             btn.style.backgroundColor = '#5cb85c';
         } catch (error) {
             btn.textContent = 'Submission Failed ❌';
-            btn.style.backgroundColor = '#d9534f';
+            btn.style.backgroundColor = 'var(--danger-button)';
             console.error('Sentence Request Error:', error);
             alert(`Error: ${error.message}`);
         }
@@ -399,7 +399,7 @@ async function showExampleSentences(banglaWord) {
         let html = '';
         const highlightRegex = new RegExp(escapeRegExp(japaneseSearchTerm), 'gi');
         if (relevantSentences.length === 0) {
-            html = `<p style="color: #ffcdd2;">No example sentences found for "${japaneseSearchTerm}".</p>`;
+            html = `<p style="color: var(--missing-color);">No example sentences found for "${japaneseSearchTerm}".</p>`;
         } else {
             relevantSentences.forEach((s, index) => {
                 const jpText = s.jp || '';
@@ -409,7 +409,7 @@ async function showExampleSentences(banglaWord) {
             });
         }
         if (relevantSentences.length < 3) {
-            html += `<div style="border-top: 1px solid var(--glass-border); margin-top: 20px; padding-top: 20px; text-align: center;"><p style="color: #ccc;">Want to see more examples for this word?</p><button id="request-sentence-btn" class="add-button" style="margin-top: 10px;">Request More Sentences</button></div>`;
+            html += `<div style="border-top: 1px solid var(--glass-border); margin-top: 20px; padding-top: 20px; text-align: center;"><p style="color: var(--text-color-light);">Want to see more examples for this word?</p><button id="request-sentence-btn" class="add-button" style="margin-top: 10px;">Request More Sentences</button></div>`;
         }
         bodyEl.innerHTML = html;
         const requestButton = document.getElementById('request-sentence-btn');
@@ -421,7 +421,7 @@ async function showExampleSentences(banglaWord) {
         }
     } catch (error) {
         console.error("Error fetching sentences:", error);
-        if (bodyEl) { bodyEl.innerHTML = `<p style="color: #ffcdd2;">Could not load sentences: ${error.message}</p>`; }
+        if (bodyEl) { bodyEl.innerHTML = `<p style="color: var(--missing-color);">Could not load sentences: ${error.message}</p>`; }
     }
 }
 
@@ -546,7 +546,7 @@ function toggleWeakWordMeaning() {
     }
 }
 function renderQuizTab() {
-    document.getElementById('quiz-tab').innerHTML = `<div class="section-box quiz-container"><h3>Vocabulary Quiz</h3><div id="quiz-content"><p>Select a quiz mode to begin.</p><div class="quiz-setup" style="margin: 25px 0; display:flex; justify-content:center; align-items:center; gap: 20px;"><label for="quiz-length-select">Questions:</label><select id="quiz-length-select" style="width: 100px; background-color: rgba(0, 0, 0, 0.2);"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select></div><div class="quiz-mode-selection"><button class="control-button bn-jp" data-quiz-type="bangla-to-jp">Bangla → Japanese</button><button class="control-button jp-bn" data-quiz-type="jp-to-bangla">Japanese → Bangla</button></div><h4 style="width: 100%; text-align: center; margin-top: 25px; color: white;">Grammar Quiz</h4><button class="control-button" data-quiz-type="particle-quiz" style="background-color: #1c3d7d;">Fill the Particle</button></div><div id="quiz-score-container" style="display:none; margin-top: 20px;"><div id="quiz-progress-bar" style="background-color: #555; border-radius: 5px; margin-bottom: 10px;"><div id="quiz-progress-bar-inner" style="width: 0%; height: 10px; background: #E3FFE7; background: linear-gradient(90deg, rgba(227, 255, 231, 1) 0%, rgba(217, 231, 255, 1) 100%); border-radius: 5px; transition: width 0.5s ease;"></div></div><p>Question: <span id="question-count">0</span> / <span id="total-questions">0</span> | Score: <span id="quiz-score">0</span></p></div><div id="quiz-results-container" style="display:none; text-align: left;"></div></div>`;
+    document.getElementById('quiz-tab').innerHTML = `<div class="section-box quiz-container"><h3>Vocabulary Quiz</h3><div id="quiz-content"><p>Select a quiz mode to begin.</p><div class="quiz-setup" style="margin: 25px 0; display:flex; justify-content:center; align-items:center; gap: 20px;"><label for="quiz-length-select">Questions:</label><select id="quiz-length-select" style="width: 100px; background-color: rgba(0, 0, 0, 0.2);"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select></div><div class="quiz-mode-selection"><button class="control-button bn-jp" data-quiz-type="bangla-to-jp">Bangla → Japanese</button><button class="control-button jp-bn" data-quiz-type="jp-to-bangla">Japanese → Bangla</button></div><h4 style="width: 100%; text-align: center; margin-top: 25px; color: white;">Grammar Quiz</h4><button class="control-button" data-quiz-type="particle-quiz" style="background-color: var(--particle-button);">Fill the Particle</button></div><div id="quiz-score-container" style="display:none; margin-top: 20px;"><div id="quiz-progress-bar" style="background-color: var(--quiz-progress-bg); border-radius: 5px; margin-bottom: 10px;"><div id="quiz-progress-bar-inner" style="width: 0%; height: 10px; background: var(--quiz-progress-color); background: linear-gradient(90deg, rgba(227, 255, 231, 1) 0%, rgba(217, 231, 255, 1) 100%); border-radius: 5px; transition: width 0.5s ease;"></div></div><p>Question: <span id="question-count">0</span> / <span id="total-questions">0</span> | Score: <span id="quiz-score">0</span></p></div><div id="quiz-results-container" style="display:none; text-align: left;"></div></div>`;
     document.querySelector('button[data-quiz-type="bangla-to-jp"]').addEventListener('click', () => startQuiz('bangla-to-jp'));
     document.querySelector('button[data-quiz-type="jp-to-bangla"]').addEventListener('click', () => startQuiz('jp-to-bangla'));
     document.querySelector('button[data-quiz-type="particle-quiz"]').addEventListener('click', () => startParticleQuiz());
@@ -583,11 +583,11 @@ async function displayParticleQuestion() {
         quizContent.innerHTML = `<div class="quiz-bangla-word" style="font-family: 'Noto Sans JP', sans-serif; font-size: 1.4em;">${gappedSentence}</div><div id="particle-hint-container"><button id="show-meaning-particle-btn" class="control-button show-meaning-button">Show Meaning</button></div><div id="quiz-options">${options.map(o => `<div class="quiz-option">${o}</div>`).join('')}</div>`;
         document.getElementById('show-meaning-particle-btn').addEventListener('click', () => {
             const hintContainer = document.getElementById('particle-hint-container');
-            hintContainer.innerHTML = `<p style="color: #ccc; margin: 10px 0;">(${sentence.bn || sentence.en})</p>`;
+            hintContainer.innerHTML = `<p style="color: var(--text-color-light); margin: 10px 0;">(${sentence.bn || sentence.en})</p>`;
         });
         quizContent.querySelectorAll('.quiz-option').forEach(el => { el.addEventListener('click', (e) => checkParticleAnswer(e.target)); });
     } catch (error) {
-        quizContent.innerHTML = `<p style="color: #ff8a80;">Error loading question. Trying again...</p>`;
+        quizContent.innerHTML = `<p style="color: var(--danger-color);">Error loading question. Trying again...</p>`;
         setTimeout(displayParticleQuestion, 2000);
     }
     document.getElementById('question-count').textContent = currentQuestionIndex + 1;
@@ -613,7 +613,7 @@ function checkParticleAnswer(element) {
 }
 async function renderSettingsTab() {
     const settingsContainer = document.getElementById('settings-tab');
-    settingsContainer.innerHTML = `<div class="section-box"><h3>Practice Settings</h3><div class="settings-auto-reveal"><label for="auto-reveal-toggle">Automatically Show Meaning</label><label class="switch"><input type="checkbox" id="auto-reveal-toggle"><span class="slider"></span></label></div><div class="sub-setting" id="prevent-weak-container"><label for="prevent-weak-toggle">Don't mark auto-revealed as weak</label><label class="switch"><input type="checkbox" id="prevent-weak-toggle"><span class="slider"></span></label></div><div class="settings-auto-reveal slider-control"><label for="auto-reveal-slider">Reveal After</label><div class="slider-container"><input type="range" min="1" max="10" value="${App.config.autoRevealDelay}" class="slider-input" id="auto-reveal-slider"><span id="auto-reveal-value">${App.config.autoRevealDelay}s</span></div></div></div><div class="section-box"><h3>Voice & Sound</h3><div id="voice-settings-placeholder"></div></div><div class="section-box"><h3>Export/Import Data</h3><p>This will backup or restore YOUR added/edited/deleted words.</p><button id="export-btn" class="control-button">Export My Words</button><input type="file" id="import-file" accept=".json" style="display: none"><button id="import-btn" class="control-button">Import My Words</button></div><div class="section-box"><h3 style="color: #ff8a80;">Danger Zone</h3><p>This will erase all your added words and reset the initial lesson data.</p><button id="reset-btn" class="control-button" style="background-color: #d9534f;">Reset All Data</button></div>`;
+    settingsContainer.innerHTML = `<div class="section-box"><h3>Practice Settings</h3><div class="settings-auto-reveal"><label for="auto-reveal-toggle">Automatically Show Meaning</label><label class="switch"><input type="checkbox" id="auto-reveal-toggle"><span class="slider"></span></label></div><div class="sub-setting" id="prevent-weak-container"><label for="prevent-weak-toggle">Don't mark auto-revealed as weak</label><label class="switch"><input type="checkbox" id="prevent-weak-toggle"><span class="slider"></span></label></div><div class="settings-auto-reveal slider-control"><label for="auto-reveal-slider">Reveal After</label><div class="slider-container"><input type="range" min="1" max="10" value="${App.config.autoRevealDelay}" class="slider-input" id="auto-reveal-slider"><span id="auto-reveal-value">${App.config.autoRevealDelay}s</span></div></div></div><div class="section-box"><h3>Voice & Sound</h3><div id="voice-settings-placeholder"></div></div><div class="section-box"><h3>Export/Import Data</h3><p>This will backup or restore YOUR added/edited/deleted words.</p><button id="export-btn" class="control-button">Export My Words</button><input type="file" id="import-file" accept=".json" style="display: none"><button id="import-btn" class="control-button">Import My Words</button></div><div class="section-box"><h3 style="color: var(--danger-color);">Danger Zone</h3><p>This will erase all your added words and reset the initial lesson data.</p><button id="reset-btn" class="control-button" style="background-color: var(--danger-button);">Reset All Data</button></div>`;
     const autoRevealToggle = document.getElementById('auto-reveal-toggle');
     const autoRevealSlider = document.getElementById('auto-reveal-slider');
     const autoRevealValue = document.getElementById('auto-reveal-value');
@@ -665,7 +665,7 @@ async function renderSettingsTab() {
     } else {
         voiceOptionsHTML += `<option value="basic_default" ${currentVoice === 'basic_default' ? 'selected' : ''}>Basic (Browser Default)</option>`;
     }
-    voicePlaceholder.innerHTML = `<div class="input-group"><label for="voice-select">Speech Voice</label><div style="display: flex; gap: 10px; align-items: center;"><select id="voice-select" style="flex-grow: 1;">${voiceOptionsHTML}</select><button id="test-voice-btn" class="control-button" title="Test selected voice">🔊 Test</button></div><p style="font-size: 0.9em; color: #ccc; margin-top: 8px;">Select your preferred voice. You can test it before saving.</p></div>`;
+    voicePlaceholder.innerHTML = `<div class="input-group"><label for="voice-select">Speech Voice</label><div style="display: flex; gap: 10px; align-items: center;"><select id="voice-select" style="flex-grow: 1;">${voiceOptionsHTML}</select><button id="test-voice-btn" class="control-button" title="Test selected voice">🔊 Test</button></div><p style="font-size: 0.9em; color: var(--text-color-light); margin-top: 8px;">Select your preferred voice. You can test it before saving.</p></div>`;
     const voiceSelect = document.getElementById('voice-select');
     voiceSelect.addEventListener('change', () => localStorage.setItem('preferredVoice', voiceSelect.value));
     document.getElementById('test-voice-btn').addEventListener('click', () => speakJapanese("こんにちは", voiceSelect.value));
@@ -733,7 +733,7 @@ function renderWeakWordsList() {
     const lessonWeakWords = getLessonWeakWords();
     document.getElementById('weak-words-count-title').textContent = `Weak Words (${lessonWeakWords.length})`;
     if (lessonWeakWords.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#888;">Your weak words list for this lesson is empty.</p>';
+        container.innerHTML = '<p style="text-align:center; color:var(--text-color-ash-dark);">Your weak words list for this lesson is empty.</p>';
         return;
     }
     lessonWeakWords.forEach(word => {

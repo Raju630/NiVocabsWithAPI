@@ -8,6 +8,7 @@
     --text-color-jp: #93b7fe;
     --button-hover: #2e5099;
     --background-image: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    --background-color: linear-gradient(120deg, #2d3a4def 0%, #1f2838 100%);
     --glass-bg: rgba(30, 40, 60, 0.45);
     --glass-border: rgba(255, 255, 255, 0.15);
     --glass-shadow: rgba(0, 0, 0, 0.2);
@@ -15,6 +16,17 @@
     --danger-bg: rgba(220, 53, 69, 0.3);
     --nav-height: 65px;
     --border-radius: 8px;
+    --text-color-white: #ffffff;
+    --nav-active-color: #6891e2; 
+    --text-color-ash: #aaa;
+    --text-color-ash-dark: #888;
+    --danger-color: #ff8a80;
+    --danger-button: #c74034;
+    --text-color-light: #ccc;
+    --quiz-progress-color:#E3FFE7;
+    --quiz-progress-bg: #555;
+    --particle-button:#1c3d7d;
+    --missing-color: #ffcdd2;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,7 +42,7 @@ body {
 a { text-decoration: none; color: var(--primary-color); font-weight: 700; }
 a:hover { color: var(--accent-teal); }
 
-h1, h2, h3 { color: #ffffff; text-shadow: 0 1px 3px var(--glass-shadow); }
+h1, h2, h3 { color: var(--text-color-white); text-shadow: 0 1px 3px var(--glass-shadow); }
 
 .container { max-width: 1100px; margin: 20px auto; padding: 20px; }
 
@@ -50,7 +62,7 @@ nav {
     padding: 0 25px; height: var(--nav-height);
     max-width: 1200px; margin: 0 auto;
 }
-nav .logo a { font-size: 1.6em; color: #fff; }
+nav .logo a { font-size: 1.6em; color: var(--text-color-white); }
 nav .nav-links { list-style: none; display: flex; gap: 15px; }
 nav .nav-links li a {
     color: var(--text-color); padding: 8px 16px; border-radius: var(--border-radius);
@@ -60,7 +72,7 @@ nav .nav-links li a:hover, nav .nav-links li a.active { background-color: var(--
 
 .dropdown-menu {
     display: none; position: absolute;
-    background: linear-gradient(120deg, #2d3a4def 0%, #1f2838 100%);
+    background: var(--background-color);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 4px 12px var(--glass-shadow);
     border-radius: var(--border-radius);
@@ -102,9 +114,9 @@ main { padding: 20px; }
     border-bottom: 3px solid transparent;
     transition: color 0.3s, border-color 0.3s;
 }
-.nav-tab:hover { color: #fff; }
+.nav-tab:hover { color: var(--text-color-white); }
 .nav-tab.active {
-    color: #6891e2;
+    color: var(--nav-active-color);
     border-bottom-color: var(--primary-color);
     font-weight: 700;
 }
@@ -134,7 +146,7 @@ main { padding: 20px; }
 }
 .word-display, .meaning-display {
     font-size: 2em; font-weight: 700;
-    color: #fff; word-wrap: break-word;
+    color: var(--text-color-white); word-wrap: break-word;
 }
 .meaning-display .speak-icon {
     font-size: 0.6em; margin-left: 15px;
@@ -158,7 +170,7 @@ input, select {
     background-color: rgba(0,0,0,0.2);
     color: var(--text-color);
 }
-input::placeholder { color: #aaa; }
+input::placeholder { color: var(--text-color-ash); }
 .input-container {
     display: grid; grid-template-columns: 1fr 1fr 1fr auto;
     gap: 15px; align-items: center;
@@ -275,9 +287,9 @@ input::placeholder { color: #aaa; }
 }
 .word-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px var(--glass-shadow); }
 .word-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.word-card-bangla { font-size: 1.2em; font-weight: 700; color: #fff; }
+.word-card-bangla { font-size: 1.2em; font-weight: 700; color: var(--text-color-white); }
 .word-card-tags { display: flex; gap: 5px; }
-.word-card-category { font-size: 0.8em; padding: 3px 8px; border-radius: 12px; background-color: rgba(0,0,0,0.3); color: #ddd; }
+.word-card-category { font-size: 0.8em; padding: 3px 8px; border-radius: 12px; background-color: rgba(0,0,0,0.3); color: var(--text-color); }
 .lesson-tag { background-color: var(--secondary-color) !important; color: var(--text-color-dark) !important; font-weight: 700; }
 .word-card-japanese { font-size: 1.4em; color: var(--text-color-jp); font-family: 'Noto Sans JP', sans-serif; display: flex; justify-content: space-between; align-items: center; }
 .speak-icon { cursor: pointer; font-size: 0.9em; }
@@ -308,13 +320,13 @@ input::placeholder { color: #aaa; }
 .quiz-option.correct {
     background: var(--success-bg) !important;
     border-color: rgba(40, 167, 69, 0.8);
-    color: #fff;
+    color: var(--text-color-white);
     font-weight: 700;
 }
 .quiz-option.wrong {
     background: var(--danger-bg) !important;
     border-color: rgba(220, 53, 69, 0.8);
-    color: #fff;
+    color: var(--text-color-white);
 }
 
 
@@ -347,7 +359,7 @@ footer {
     text-align: center;
     padding: 25px;
     background: rgba(0,0,0,0.2);
-    color: #aaa;
+    color: var(--text-color-ash);
     margin-top: 40px;
     border-top: 1px solid var(--glass-border);
 }
@@ -429,7 +441,7 @@ nav {
     font-size: 1.2em;
     font-family: 'Noto Sans JP', sans-serif;
     margin-bottom: 8px;
-    color: #93b7fe;
+    color: var(--text-color-jp);
 }
 .modal-content h3{
     font-size: 1.5em;
@@ -437,7 +449,7 @@ nav {
 }
 .sentence-bangla { /* NEW: Style for Bangla meaning */
     font-size: 1.1em;
-    color: #ccc;
+    color: var(--text-color);
     margin-top: 5px;
     padding-left: 10px; /* Indent slightly */
 }
@@ -537,13 +549,13 @@ nav {
 .study-list-item .word-bangla {
     font-weight: 500;
     font-size: 1.2em;
-    color: #fff;
+    color: var(--text-color-white);
 }
 
 .study-list-item .word-japanese {
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 1.2em;
-    color: #93b7fe;
+    color: var(--text-color-jp);
 }
 
 /* Responsive adjustments for study page */
@@ -710,13 +722,13 @@ nav {
     .study-list-item .word-bangla {
         font-weight: 500;
         font-size: 1.1em;
-        color: #fff;
+        color: var(--text-color-white);
     }
 
     .study-list-item .word-japanese {
         font-family: 'Noto Sans JP', sans-serif;
         font-size: 1.1em;
-        color: #93b7fe;
+        color: var(--text-color-jp);
     }
     .container {
     max-width: 1100px;
@@ -853,7 +865,7 @@ nav {
         font-size: 1.2em;
         font-family: 'Noto Sans JP', sans-serif;
         margin-bottom: 5px;
-        color: #93b7fe;
+        color: var(--text-color-jp);
     }
     .input-group {
          margin-bottom:2px ; 
@@ -865,7 +877,7 @@ nav {
     }
     .sentence-bangla { /* NEW: Style for Bangla meaning */
         font-size: 1.1em;
-        color: #e3e3e3;
+        color: var(--text-color);
         margin-top: 5px;
         padding-left: 10px; /* Indent slightly */
     }
@@ -909,7 +921,7 @@ nav {
     display: block; /* Make Japanese word appear on a new line */
     margin-top: 4px;
     font-family: 'Noto Sans JP', sans-serif;
-    color: #93b7fe;
+    color: var(--text-color-jp);
 }
 
 .study-list-item .examples {
@@ -952,23 +964,23 @@ nav {
 }
 
 .image-loading-text, .image-error-text {
-    color: #aaa;
+    color: var(--text-color-ash);
     font-style: italic;
 }
 
 .image-error-text {
-    color: #ff8a80; /* A soft red for errors */
+    color: var(--danger-color); /* A soft red for errors */
 }
 
 .pexels-credit {
     font-size: 0.75em;
-    color: #888 !important;
+    color: var(--text-color-ash-dark) !important;
     text-decoration: none;
     align-self: flex-end; /* Puts credit on the right */
 }
 
 .pexels-credit:hover {
-    color: #ccc !important;
+    color: var(--text-color) !important;
 }
 
 /* --- Study List Item Actions --- */
@@ -1017,23 +1029,23 @@ nav {
 }
 
 .image-loading-text, .image-error-text {
-    color: #aaa;
+    color: var(--text-color-ash);
     font-style: italic;
 }
 
 .image-error-text {
-    color: #ff8a80;
+    color: var(--danger-color);
 }
 
 .pexels-credit {
     font-size: 0.75em;
-    color: #888 !important;
+    color: var(--text-color-ash-dark) !important;
     text-decoration: none;
     align-self: flex-end;
 }
 
 .pexels-credit:hover {
-    color: #ccc !important;
+    color: var(--text-color) !important;
 }
 
 /* Style for the new mnemonic button */
@@ -1083,7 +1095,7 @@ nav {
 .mnemonic-bangla {
     font-size: 1.5em;
     font-weight: 700;
-    color: #fff;
+    color: var(--text-color-white);
     margin-bottom: 5px;
 }
 
@@ -1108,24 +1120,24 @@ nav {
 }
 
 .image-loading-text, .image-error-text {
-    color: #aaa;
+    color: var(--text-color-ash);
     font-style: italic;
     padding: 20px;
 }
 
 .image-error-text {
-    color: #ff8a80;
+    color: var(--danger-color);
 }
 
 .pexels-credit {
     font-size: 0.75em;
-    color: #888 !important;
+    color: var(--text-color-ash-dark) !important;
     text-decoration: none;
     align-self: flex-end;
 }
 
 .pexels-credit:hover {
-    color: #ccc !important;
+    color: var(--text-color) !important;
 }
 
 /* Highlighted Word Style */
@@ -1145,7 +1157,7 @@ footer {
     text-align: center;
     padding: 25px;
     background: rgba(0,0,0,0.2);
-    color: #aaa;
+    color: var(--text-color-ash);
     margin-top: 40px;
     border-top: 1px solid var(--glass-border);
 }
@@ -1301,7 +1313,7 @@ footer {
     align-items: center;
     gap: 10px;
     font-size: 0.9em;
-    color: #ccc;
+    color: var(--text-color);
 }
 
 .tech-icon img {
@@ -1328,7 +1340,7 @@ footer {
     transform: translateY(0);
 }
 
-.tech-icon .github-logo { fill: #e0e0e0; } /* Keep GitHub button icon neutral */
+.tech-icon .github-logo { fill: var(--text-color); } /* Keep GitHub button icon neutral */
 
 
 /* NEW: Unified Social Button Styles */
@@ -1339,7 +1351,7 @@ footer {
     gap: 10px;
     padding: 12px 25px;
     border-radius: var(--border-radius);
-    color: white;
+    color: var(--text-color-white);
     font-weight: 700;
     text-decoration: none;
     transition: all 0.3s ease;
@@ -1418,14 +1430,14 @@ select#voice-select:focus {
 .wrong-answer-info {
     margin-top: 10px;
     font-size: 0.9em;
-    color: #ccc;
+    color: var(--text-color);
     border-top: 1px solid var(--glass-border);
     padding-top: 10px;
 }
 
 .wrong-particle {
     text-decoration: line-through;
-    color: #ff8a80; /* Soft red for the wrong answer */
+    color: var(--danger-color); /* Soft red for the wrong answer */
 }
 
 .correct-particle {
@@ -1678,7 +1690,7 @@ select#voice-select:focus {
     gap: 12px;
     margin: 15px 0 5px 0;
     font-size: 0.9em;
-    color: #ccc;
+    color: var(--text-color);
 }
 
 /* The switch - a checkbox wrapper */
@@ -1817,5 +1829,5 @@ input:checked + .slider:before {
 
 .sub-setting label {
     font-size: 1em; /* Slightly smaller than main settings */
-    color: #ccc;
+    color: var(--text-color);
 }
