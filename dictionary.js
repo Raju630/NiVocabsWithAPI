@@ -794,8 +794,9 @@ function toggleRandomMeaning(isAutoReveal = false) {
         if (App.config.practiceMode === 'jp-bn') { answerText = word; }
         cardContent.innerHTML = `<div class="meaning-display">${answerText}<span class="speak-icon" onclick="speakJapanese('${wordData.meaning}')">🔊</span></div>`;
         btn.textContent = 'Show Word';
-        if (!App.data.weakWords.includes(word)) {
-            if (!isAutoReveal || (isAutoReveal && !App.config.preventAutoWeakWords)) {
+        // Only add to weakWords if preventAutoWeakWords is OFF
+        if (!App.config.preventAutoWeakWords) {
+            if (!App.data.weakWords.includes(word)) {
                 App.data.weakWords.push(word);
                 saveUserData();
                 renderWeakWordsList();
