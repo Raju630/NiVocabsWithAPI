@@ -691,14 +691,56 @@ function attachAppEventListeners() {
 }
 function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function closeSentenceModal() { App.elements.sentenceModal.style.display = 'none'; }
+
+// Helper: Get weak words for current lesson only
+function getLessonWeakWords() {
+    if (!App.config.lessonId) return App.data.weakWords.filter(w => getWordData(w));
+    return App.data.weakWords.filter(w => {
+        const wd = getWordData(w);
+        return wd && wd.lesson == App.config.lessonId;
+    });
+}
+
+// --- MODIFIED: Only practice weak words from current lesson ---
+function getWeakWordForPractice() {
+    const lessonWeakWords = getLessonWeakWords();
+    if (App.config.weakPracticeList.map(w => getWordData(w)).filter(Boolean).length === 0) {
+        if (lessonWeakWords.length === 0) {
+            document.getElementById('weak-word-flashcard-content').innerHTML = '<p>No weak words to practice in this lesson. Well done!</p>';
+            document.getElementById('show-weak-meaning-btn').style.display = 'none';
+            document.getElementById('get-weak-word-btn').textContent = 'Get Weak Word';
+            return;
+        }
+        App.config.weakPracticeList = [...lessonWeakWords].sort(() => Math.random() - 0.5);
+        document.getElementById('get-weak-word-btn').textContent = 'Next Weak Word';
+    }
+    App.config.currentRandomWord = App.config.weakPracticeList.pop();
+    const content = document.getElementById('weak-word-flashcard-content');
+    content.innerHTML = `<div class="word-display">${App.config.currentRandomWord}</div>`;
+    const btn = document.getElementById('show-weak-meaning-btn');
+    btn.textContent = 'Show Meaning';
+    btn.style.display = 'inline-block';
+    if (App.config.weakPracticeList.length === 0) {
+        document.getElementById('get-weak-word-btn').textContent = 'Start Over';
+    }
+}
+
+// --- MODIFIED: Only show weak words from current lesson in the list ---
 function renderWeakWordsList() {
     const container = document.getElementById('weak-words-list');
     if (!container) return;
     container.innerHTML = '';
-    document.getElementById('weak-words-count-title').textContent = `Weak Words (${App.data.weakWords.map(w => getWordData(w)).filter(Boolean).length})`;
-    if (App.data.weakWords.map(w => getWordData(w)).filter(Boolean).length === 0) { container.innerHTML = '<p style="text-align:center; color:#888;">Your weak words list is empty.</p>'; return; }
-    App.data.weakWords.forEach(word => { if (getWordData(word)) container.appendChild(createWordCard(word)); });
+    const lessonWeakWords = getLessonWeakWords();
+    document.getElementById('weak-words-count-title').textContent = `Weak Words (${lessonWeakWords.length})`;
+    if (lessonWeakWords.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#888;">Your weak words list for this lesson is empty.</p>';
+        return;
+    }
+    lessonWeakWords.forEach(word => {
+        if (getWordData(word)) container.appendChild(createWordCard(word));
+    });
 }
+
 function getRandomWord() {
     clearTimeout(autoRevealTimer);
     if (App.config.mainPracticeList.length === 0) {
@@ -719,9 +761,15 @@ function getRandomWord() {
     if (App.config.autoRevealEnabled) { autoRevealTimer = setTimeout(() => { if (btn.textContent === 'Show Meaning') { toggleRandomMeaning(true); } }, App.config.autoRevealDelay * 1000); }
 }
 function getWeakWordForPractice() {
+    const lessonWeakWords = getLessonWeakWords();
     if (App.config.weakPracticeList.map(w => getWordData(w)).filter(Boolean).length === 0) {
-        if (App.data.weakWords.map(w => getWordData(w)).filter(Boolean).length === 0) { document.getElementById('weak-word-flashcard-content').innerHTML = '<p>No weak words to practice. Well done!</p>'; document.getElementById('show-weak-meaning-btn').style.display = 'none'; document.getElementById('get-weak-word-btn').textContent = 'Get Weak Word'; return; }
-        App.config.weakPracticeList = [...App.data.weakWords].sort(() => Math.random() - 0.5);
+        if (lessonWeakWords.length === 0) {
+            document.getElementById('weak-word-flashcard-content').innerHTML = '<p>No weak words to practice in this lesson. Well done!</p>';
+            document.getElementById('show-weak-meaning-btn').style.display = 'none';
+            document.getElementById('get-weak-word-btn').textContent = 'Get Weak Word';
+            return;
+        }
+        App.config.weakPracticeList = [...lessonWeakWords].sort(() => Math.random() - 0.5);
         document.getElementById('get-weak-word-btn').textContent = 'Next Weak Word';
     }
     App.config.currentRandomWord = App.config.weakPracticeList.pop();
@@ -730,7 +778,9 @@ function getWeakWordForPractice() {
     const btn = document.getElementById('show-weak-meaning-btn');
     btn.textContent = 'Show Meaning';
     btn.style.display = 'inline-block';
-    if (App.config.weakPracticeList.length === 0) { document.getElementById('get-weak-word-btn').textContent = 'Start Over'; }
+    if (App.config.weakPracticeList.length === 0) {
+        document.getElementById('get-weak-word-btn').textContent = 'Start Over';
+    }
 }
 function toggleRandomMeaning(isAutoReveal = false) {
     clearTimeout(autoRevealTimer);
