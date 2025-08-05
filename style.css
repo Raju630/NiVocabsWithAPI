@@ -1679,6 +1679,9 @@ select#voice-select:focus {
         min-width: 100px;
         padding: 12px 10px;
     }
+    .lan_toggle{
+        font-size: 0.9em;
+    }
 }
 
 /* --- Add these styles to the end of your style.css --- */
